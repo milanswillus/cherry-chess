@@ -35,12 +35,16 @@ struct ChessBoardView: View {
                                 let isPremove = !viewModel.isExploringHistory && viewModel.premoves.contains { $0.start == square || $0.end == square }
                                 
                                 let isLegalMove = {
-                                    if !viewModel.isExploringHistory, let selected = viewModel.selectedSquare {
-                                        if viewModel.isPlayerTurn && !viewModel.isProcessing {
-                                            return viewModel.board.canMove(pieceAt: selected, to: square)
-                                        } else {
-                                            if let piece = viewModel.virtualBoard.position.piece(at: selected) {
-                                                return viewModel.isConceptuallyPossible(pieceKind: piece.kind, start: selected, end: square, color: piece.color)
+                                    if let selected = viewModel.selectedSquare {
+                                        if viewModel.isAnalysisMode {
+                                            return viewModel.displayBoard.canMove(pieceAt: selected, to: square)
+                                        } else if !viewModel.isExploringHistory {
+                                            if viewModel.isPlayerTurn && !viewModel.isProcessing {
+                                                return viewModel.board.canMove(pieceAt: selected, to: square)
+                                            } else {
+                                                if let piece = viewModel.virtualBoard.position.piece(at: selected) {
+                                                    return viewModel.isConceptuallyPossible(pieceKind: piece.kind, start: selected, end: square, color: piece.color)
+                                                }
                                             }
                                         }
                                     }
@@ -105,7 +109,7 @@ struct ChessBoardView: View {
                                     square: square,
                                     piece: viewModel.displayBoard.position.piece(at: square),
                                     isLight: isLight,
-                                    isSelected: !viewModel.isExploringHistory && viewModel.selectedSquare == square,
+                                    isSelected: (!viewModel.isExploringHistory || viewModel.isAnalysisMode) && viewModel.selectedSquare == square,
                                     isLastMove: viewModel.displayLastMove?.start == square || viewModel.displayLastMove?.end == square,
                                     isPremove: isPremove,
                                     isLegalMove: isLegalMove,

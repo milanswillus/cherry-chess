@@ -105,7 +105,7 @@ class GameViewModel: ObservableObject {
         if isExploringHistory {
             return history[historyIndex].board
         }
-        if !premoves.isEmpty {
+        if !premoves.isEmpty && !isAnalysisMode {
             return virtualBoard
         }
         return board
@@ -220,6 +220,10 @@ class GameViewModel: ObservableObject {
     }
     
     private func updateVirtualBoard() {
+        if isAnalysisMode {
+            self.virtualBoard = board
+            return
+        }
         var currentFen = board.position.fen
         
         for pm in premoves {
@@ -481,7 +485,41 @@ class GameViewModel: ObservableObject {
     }
     
     func select(square: Square) {
-        if isExploringHistory { return } // Prevent interaction during history exploration
+        if isExploringHistory {
+            if isAnalysisMode {
+                // In analysis mode, we allow interacting with history board
+                let activeBoard = displayBoard
+                if let selected = selectedSquare {
+                    if activeBoard.canMove(pieceAt: selected, to: square) {
+                        // Truncate history at historyIndex to branch off
+                        self.board = activeBoard
+                        self.lastMove = history[historyIndex].lastMove
+                        self.lastPlayerMoveFenBefore = history[historyIndex].fenBefore
+                        self.history = Array(self.history.prefix(historyIndex + 1))
+                        self.historyIndex = self.history.count - 1
+                        
+                        // Make the move on the updated board
+                        makePlayerMove(start: selected, end: square)
+                        selectedSquare = nil
+                    } else {
+                        if let piece = activeBoard.position.piece(at: square), piece.color == activeBoard.position.sideToMove {
+                            selectedSquare = square
+                            HapticManager.shared.playSelection()
+                        } else {
+                            selectedSquare = nil
+                        }
+                    }
+                } else {
+                    if let piece = activeBoard.position.piece(at: square), piece.color == activeBoard.position.sideToMove {
+                        selectedSquare = square
+                        HapticManager.shared.playSelection()
+                    }
+                }
+            } else {
+                return // Prevent interaction during history exploration
+            }
+            return
+        }
         
         if isPlayerTurn && !isProcessing {
             // Normal move selection
@@ -508,7 +546,7 @@ class GameViewModel: ObservableObject {
                     HapticManager.shared.playSelection()
                 }
             }
-        } else if isEngineTurn || isProcessing {
+        } else if (isEngineTurn || isProcessing) && !isAnalysisMode {
             // Premove logic
             if let selected = selectedSquare {
                 if let piece = virtualBoard.position.piece(at: selected),
@@ -733,9 +771,9 @@ class GameViewModel: ObservableObject {
         return score
     }
     
-    /// Executes a queued premove if it's currently legal. Returns true if executed.
     @discardableResult
     func executePremoveIfValid() -> Bool {
+        if isAnalysisMode { return false }
         guard !premoves.isEmpty else { return false }
         
         let nextPremove = premoves.removeFirst()

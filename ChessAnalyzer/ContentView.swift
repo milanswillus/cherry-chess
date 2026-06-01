@@ -1463,11 +1463,30 @@ struct ContentView: View {
                             }
                             
                             if !analysisViewModel.history.isEmpty {
-                                HStack(spacing: 12) {
+                                HStack(spacing: 8) {
+                                    // Go to Start
                                     Button(action: {
-                                        if analysisViewModel.historyIndex > 0 {
-                                            analysisViewModel.historyIndex -= 1
+                                        withAnimation {
+                                            analysisViewModel.historyIndex = 0
                                             resetAnalysisHints()
+                                        }
+                                    }) {
+                                        Image(systemName: "chevron.left.2")
+                                            .font(.body.bold())
+                                            .foregroundColor(analysisViewModel.historyIndex > 0 ? .white : .gray)
+                                            .padding(10)
+                                            .background(Theme.panelBackground)
+                                            .clipShape(Circle())
+                                    }
+                                    .disabled(analysisViewModel.historyIndex == 0)
+                                    
+                                    // Step Back (Undo)
+                                    Button(action: {
+                                        withAnimation {
+                                            if analysisViewModel.historyIndex > 0 {
+                                                analysisViewModel.historyIndex -= 1
+                                                resetAnalysisHints()
+                                            }
                                         }
                                     }) {
                                         Image(systemName: "chevron.left")
@@ -1479,29 +1498,28 @@ struct ContentView: View {
                                     }
                                     .disabled(analysisViewModel.historyIndex == 0)
                                     
+                                    // Centered Move Count Info Card
                                     HStack {
-                                        HStack(spacing: 6) {
-                                            Text(L10n.tr("accuracy"))
-                                                .font(.caption.bold())
-                                                .foregroundColor(Theme.textSecondary)
-                                            if analysisViewModel.isExploringHistory {
-                                                Text("• \(String(format: L10n.tr("step_num"), analysisViewModel.historyIndex))")
-                                                    .font(.caption.bold())
-                                                    .foregroundColor(Theme.accentColor)
-                                            }
-                                        }
                                         Spacer()
-                                        AccuracyCounterView(accuracy: analysisViewModel.playerAccuracy)
+                                        Text(appLanguage == "de" ? 
+                                            "Zug \(analysisViewModel.historyIndex) / \(max(0, analysisViewModel.history.count - 1))" : 
+                                            "Move \(analysisViewModel.historyIndex) / \(max(0, analysisViewModel.history.count - 1))")
+                                            .font(.caption.bold())
+                                            .foregroundColor(analysisViewModel.isExploringHistory ? Theme.accentColor : Theme.textSecondary)
+                                        Spacer()
                                     }
                                     .padding(.horizontal, 12)
-                                    .padding(.vertical, 4)
+                                    .padding(.vertical, 8)
                                     .background(Color.black.opacity(0.15))
                                     .cornerRadius(8)
                                     
+                                    // Step Forward (Redo)
                                     Button(action: {
-                                        if analysisViewModel.historyIndex < analysisViewModel.history.count - 1 {
-                                            analysisViewModel.historyIndex += 1
-                                            resetAnalysisHints()
+                                        withAnimation {
+                                            if analysisViewModel.historyIndex < analysisViewModel.history.count - 1 {
+                                                analysisViewModel.historyIndex += 1
+                                                resetAnalysisHints()
+                                            }
                                         }
                                     }) {
                                         Image(systemName: "chevron.right")
@@ -1512,19 +1530,23 @@ struct ContentView: View {
                                             .clipShape(Circle())
                                     }
                                     .disabled(analysisViewModel.historyIndex == analysisViewModel.history.count - 1)
+                                    
+                                    // Go to End
+                                    Button(action: {
+                                        withAnimation {
+                                            analysisViewModel.historyIndex = analysisViewModel.history.count - 1
+                                            resetAnalysisHints()
+                                        }
+                                    }) {
+                                        Image(systemName: "chevron.right.2")
+                                            .font(.body.bold())
+                                            .foregroundColor(analysisViewModel.historyIndex < analysisViewModel.history.count - 1 ? .white : .gray)
+                                            .padding(10)
+                                            .background(Theme.panelBackground)
+                                            .clipShape(Circle())
+                                    }
+                                    .disabled(analysisViewModel.historyIndex == analysisViewModel.history.count - 1)
                                 }
-                            } else {
-                                HStack {
-                                    Text(L10n.tr("accuracy"))
-                                        .font(.caption.bold())
-                                        .foregroundColor(Theme.textSecondary)
-                                    Spacer()
-                                    AccuracyCounterView(accuracy: analysisViewModel.playerAccuracy)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 4)
-                                .background(Color.black.opacity(0.15))
-                                .cornerRadius(8)
                             }
                         }
                         .padding(.horizontal)
@@ -2128,7 +2150,7 @@ struct SettingsView: View {
             }
         }
     }
-}
+
 
 struct PlayerProfileView: View {
     @AppStorage("appLanguage") private var appLanguage = "de"
