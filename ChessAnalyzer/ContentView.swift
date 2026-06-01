@@ -840,7 +840,15 @@ struct ContentView: View {
                 
                 let isBook = checkIfBookMove(playedMoves: viewModel.history.compactMap { $0.lastMove } + [lastMove])
                 await MainActor.run { viewModel.inOpening = isBook }
-                let classification = analyzer.classifyMove(evalBefore: evalBefore, evalAfter: playerEvalAfter, isBook: isBook)
+                
+                let isBest = {
+                    if let bestMoveStr = evalBeforeResult?.bestMove,
+                       let move = EngineLANParser.parse(move: bestMoveStr, for: viewModel.playerColor, in: Position(fen: fenBefore) ?? viewModel.board.position) {
+                        return lastMove.start == move.start && lastMove.end == move.end
+                    }
+                    return false
+                }()
+                let classification = analyzer.classifyMove(evalBefore: evalBefore, evalAfter: playerEvalAfter, isBook: isBook, isBest: isBest)
                 
                 let evalWhitePOV = viewModel.playerColor == .white ? playerEvalAfter : evalAfter
                 
@@ -905,13 +913,14 @@ struct ContentView: View {
                     analyzer.debugStatus = "Analysiere gegnerischen Zug..."
                     
                     let engineEvalBefore = evalAfter
+                    let postEngineResult = await evaluateWithCache(fen: viewModel.board.position.fen, depth: 10, limitSkill: false, movetime: 300)
                     let engineEvalAfter = {
                         if case .checkmate = viewModel.board.state {
                             return 10000
                         } else if viewModel.gameOver {
                             return 0
                         } else {
-                            return result.score
+                            return postEngineResult?.score ?? 0
                         }
                     }()
                     
@@ -921,17 +930,27 @@ struct ContentView: View {
                     if case .checkmate = viewModel.board.state {
                         engineMateWhitePOV = nil
                     } else {
-                        engineMateWhitePOV = result.mate.map { viewModel.engineColor == .white ? $0 : -$0 }
+                        engineMateWhitePOV = postEngineResult?.mate.map { viewModel.engineColor == .white ? $0 : -$0 }
                     }
                     
                     let engineIsBook = checkIfBookMove(playedMoves: viewModel.history.compactMap { $0.lastMove } + [engineMove])
                     await MainActor.run { viewModel.inOpening = engineIsBook }
+                    
+                    let cachedEvalBefore = evaluationCache[fen]
+                    let isEngineBest = {
+                        if let bestMoveStr = cachedEvalBefore?.bestMove,
+                           let move = EngineLANParser.parse(move: bestMoveStr, for: viewModel.engineColor, in: Position(fen: fen) ?? viewModel.board.position) {
+                            return engineMove.start == move.start && engineMove.end == move.end
+                        }
+                        return false
+                    }()
+                    
                     let engineClass: MoveClassification
                     if isMaxElo {
                         // Max strength bot always plays best moves
                         engineClass = engineIsBook ? .book : .best
                     } else {
-                        engineClass = analyzer.classifyMove(evalBefore: engineEvalBefore, evalAfter: engineEvalAfter, isBook: engineIsBook)
+                        engineClass = analyzer.classifyMove(evalBefore: engineEvalBefore, evalAfter: engineEvalAfter, isBook: engineIsBook, isBest: isEngineBest)
                     }
                     
                     let engineEvalWhitePOV = viewModel.engineColor == .white ? engineEvalAfter : -engineEvalAfter
@@ -1136,7 +1155,14 @@ struct ContentView: View {
                 analysisViewModel.inOpening = isBook
             }
             
-            let classification = analyzer.classifyMove(evalBefore: evalBefore, evalAfter: playerEvalAfter, isBook: isBook)
+            let isBest = {
+                if let bestMoveStr = evalBeforeResult?.bestMove,
+                   let move = EngineLANParser.parse(move: bestMoveStr, for: movingColor, in: Position(fen: fenBefore) ?? analysisViewModel.board.position) {
+                    return lastMove.start == move.start && lastMove.end == move.end
+                }
+                return false
+            }()
+            let classification = analyzer.classifyMove(evalBefore: evalBefore, evalAfter: playerEvalAfter, isBook: isBook, isBest: isBest)
             let evalWhitePOV = movingColor == .white ? playerEvalAfter : evalAfter
             
             await MainActor.run {

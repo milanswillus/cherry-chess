@@ -196,8 +196,9 @@ class StockfishAnalyzer: ObservableObject {
         return 50.0 + 50.0 * (2.0 / (1.0 + exp(x)) - 1.0)
     }
     
-    func classifyMove(evalBefore: Int, evalAfter: Int, isBook: Bool = false) -> MoveClassification {
+    func classifyMove(evalBefore: Int, evalAfter: Int, isBook: Bool = false, isBest: Bool = false) -> MoveClassification {
         if isBook { return .book }
+        if isBest { return .best }
         
         // 1. Calculate win probability drop using clamped evaluations
         // Clamping prevents saturation at extreme evaluations (+15 vs +10, etc.)
@@ -270,7 +271,7 @@ class StockfishAnalyzer: ObservableObject {
         
         // Standard classifications based on Expected % Loss in Win Probability
         if drop < 0.5 {
-            return .best
+            return .excellent
         } else if drop < 2.0 {
             return .excellent
         } else if drop < 5.0 {
