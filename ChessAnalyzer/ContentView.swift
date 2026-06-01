@@ -848,7 +848,15 @@ struct ContentView: View {
                     }
                     return false
                 }()
-                let classification = analyzer.classifyMove(evalBefore: evalBefore, evalAfter: playerEvalAfter, isBook: isBook, isBest: isBest)
+                let classification = analyzer.classifyMove(
+                    evalBefore: evalBefore,
+                    evalAfter: playerEvalAfter,
+                    isBook: isBook,
+                    isBest: isBest,
+                    move: lastMove,
+                    boardBefore: Position(fen: fenBefore).map { Board(position: $0) } ?? viewModel.board,
+                    boardAfter: viewModel.board
+                )
                 
                 let evalWhitePOV = viewModel.playerColor == .white ? playerEvalAfter : evalAfter
                 
@@ -950,7 +958,15 @@ struct ContentView: View {
                         // Max strength bot always plays best moves
                         engineClass = engineIsBook ? .book : .best
                     } else {
-                        engineClass = analyzer.classifyMove(evalBefore: engineEvalBefore, evalAfter: engineEvalAfter, isBook: engineIsBook, isBest: isEngineBest)
+                        engineClass = analyzer.classifyMove(
+                            evalBefore: engineEvalBefore,
+                            evalAfter: engineEvalAfter,
+                            isBook: engineIsBook,
+                            isBest: isEngineBest,
+                            move: engineMove,
+                            boardBefore: Position(fen: fen).map { Board(position: $0) } ?? viewModel.board,
+                            boardAfter: viewModel.board
+                        )
                     }
                     
                     let engineEvalWhitePOV = viewModel.engineColor == .white ? engineEvalAfter : -engineEvalAfter
@@ -1162,7 +1178,15 @@ struct ContentView: View {
                 }
                 return false
             }()
-            let classification = analyzer.classifyMove(evalBefore: evalBefore, evalAfter: playerEvalAfter, isBook: isBook, isBest: isBest)
+            let classification = analyzer.classifyMove(
+                evalBefore: evalBefore,
+                evalAfter: playerEvalAfter,
+                isBook: isBook,
+                isBest: isBest,
+                move: lastMove,
+                boardBefore: Position(fen: fenBefore).map { Board(position: $0) } ?? analysisViewModel.board,
+                boardAfter: analysisViewModel.board
+            )
             let evalWhitePOV = movingColor == .white ? playerEvalAfter : evalAfter
             
             await MainActor.run {

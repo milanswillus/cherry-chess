@@ -189,16 +189,120 @@ class StockfishAnalyzer: ObservableObject {
         latestMate = nil
     }
     
-    // MARK: - Move Classification
-    
     private func winProbability(centipawns: Int) -> Double {
         let x = -0.00368208 * Double(centipawns)
         return 50.0 + 50.0 * (2.0 / (1.0 + exp(x)) - 1.0)
     }
+
+    private func pieceValue(_ kind: Piece.Kind) -> Int {
+        switch kind {
+        case .pawn: return 1
+        case .knight: return 3
+        case .bishop: return 3
+        case .rook: return 5
+        case .queen: return 9
+        case .king: return 1000
+        }
+    }
     
-    func classifyMove(evalBefore: Int, evalAfter: Int, isBook: Bool = false, isBest: Bool = false) -> MoveClassification {
+    private func isSacrifice(move: Move, boardBefore: Board, boardAfter: Board) -> Bool {
+        let activeColor = boardBefore.position.sideToMove
+        let opponentColor = activeColor == .white ? Piece.Color.black : Piece.Color.white
+        
+        guard let movedPiece = boardBefore.position.piece(at: move.start),
+              movedPiece.kind != .pawn && movedPiece.kind != .king else {
+            return false
+        }
+        
+        let movedPieceVal = pieceValue(movedPiece.kind)
+        
+        for oppSq in Square.allCases {
+            guard let oppPiece = boardAfter.position.piece(at: oppSq),
+                  oppPiece.color == opponentColor else { continue }
+            
+            if boardAfter.legalMoves(forPieceAt: oppSq).contains(move.end) {
+                let oppPieceVal = pieceValue(oppPiece.kind)
+                
+                // Case A: Opponent piece is of lower value
+                if oppPieceVal < movedPieceVal {
+                    return true
+                }
+                
+                // Case B: Opponent piece is of equal/higher value but unprotected
+                var boardCaptured = boardAfter
+                if boardCaptured.move(pieceAt: oppSq, to: move.end) != nil {
+                    var canRecapture = false
+                    for ourSq in Square.allCases {
+                        if let ourPiece = boardCaptured.position.piece(at: ourSq),
+                           ourPiece.color == activeColor {
+                            if boardCaptured.legalMoves(forPieceAt: ourSq).contains(move.end) {
+                                canRecapture = true
+                                break
+                            }
+                        }
+                    }
+                    if !canRecapture {
+                        return true
+                    }
+                }
+            }
+        }
+        
+        return false
+    }
+    
+    private func hasEnPrisePiece(board: Board, color: Piece.Color) -> Bool {
+        let opponentColor = color == .white ? Piece.Color.black : Piece.Color.white
+        
+        for ourSq in Square.allCases {
+            guard let ourPiece = board.position.piece(at: ourSq),
+                  ourPiece.color == color,
+                  ourPiece.kind != .pawn && ourPiece.kind != .king else { continue }
+            
+            let ourPieceVal = pieceValue(ourPiece.kind)
+            
+            for oppSq in Square.allCases {
+                guard let oppPiece = board.position.piece(at: oppSq),
+                      oppPiece.color == opponentColor else { continue }
+                
+                if board.legalMoves(forPieceAt: oppSq).contains(ourSq) {
+                    let oppPieceVal = pieceValue(oppPiece.kind)
+                    if oppPieceVal < ourPieceVal {
+                        return true
+                    }
+                    
+                    var boardCaptured = board
+                    if boardCaptured.move(pieceAt: oppSq, to: ourSq) != nil {
+                        var canRecapture = false
+                        for recaptureSq in Square.allCases {
+                            if let recPiece = boardCaptured.position.piece(at: recaptureSq),
+                               recPiece.color == color {
+                                if boardCaptured.legalMoves(forPieceAt: recaptureSq).contains(ourSq) {
+                                    canRecapture = true
+                                    break
+                                }
+                            }
+                        }
+                        if !canRecapture {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+        return false
+    }
+    
+    func classifyMove(
+        evalBefore: Int, 
+        evalAfter: Int, 
+        isBook: Bool = false, 
+        isBest: Bool = false,
+        move: Move? = nil,
+        boardBefore: Board? = nil,
+        boardAfter: Board? = nil
+    ) -> MoveClassification {
         if isBook { return .book }
-        if isBest { return .best }
         
         // 1. Calculate win probability drop using clamped evaluations
         // Clamping prevents saturation at extreme evaluations (+15 vs +10, etc.)
@@ -255,18 +359,50 @@ class StockfishAnalyzer: ObservableObject {
         }
         
         // Miss: Missed opportunity to gain/maintain a winning position, resulting in an equal or worse outcome.
-        if wBefore > 70.0 && wAfter <= 50.0 && drop >= 20.0 {
+        if evalBefore >= 200 && evalAfter <= 100 && drop >= 10.0 {
             return .missed
         }
         
-        // Great / Brilliant:
-        // Since we lack deep material sacrifice detection, we reward moves that the engine
-        // initially underestimated (resulting in a negative drop / probability gain).
-        if drop <= -2.0 {
-            if drop <= -5.0 {
-                return .brilliant
+        // Sacrifice check for Brilliant Move
+        let isSac = {
+            if let m = move, let bBefore = boardBefore, let bAfter = boardAfter {
+                let activeColor = bBefore.position.sideToMove
+                return isSacrifice(move: m, boardBefore: bBefore, boardAfter: bAfter) ||
+                       (!hasEnPrisePiece(board: bBefore, color: activeColor) && hasEnPrisePiece(board: bAfter, color: activeColor))
             }
+            return false
+        }()
+        
+        // Brilliant: sound sacrifice (isBest or drop < 0.5, is a sacrifice, position not already winning, position not losing)
+        if isSac && (isBest || drop < 0.5) && evalBefore < 600 && evalAfter >= -150 {
+            return .brilliant
+        }
+        
+        // Great Move: critical equalizer, breakthrough, or depth anomaly
+        let isGreat = {
+            if isBest || drop < 0.5 {
+                // Equalizer: losing -> equal
+                if evalBefore <= -150 && evalAfter >= -100 {
+                    return true
+                }
+                // Breakthrough: equal -> winning
+                if evalBefore >= -100 && evalBefore <= 100 && evalAfter >= 200 {
+                    return true
+                }
+                // Depth anomaly (engine initially underestimated)
+                if drop <= -2.0 {
+                    return true
+                }
+            }
+            return false
+        }()
+        
+        if isGreat {
             return .great
+        }
+        
+        if isBest {
+            return .best
         }
         
         // Standard classifications based on Expected % Loss in Win Probability
