@@ -2211,12 +2211,12 @@ struct PlayerProfileView: View {
     var hintAction: (() -> Void)? = nil
     var hintStep: Int = 0
     var isAnalyzingHint: Bool = false
-    var bestMoveAction: (() -> Void)? = nil
-    var showBestMoveButton: Bool = false
     var isAnalysisMode: Bool = false
     var isCalculatingBestMove: Bool = false
     var isBestMoveActive: Bool = false
     var isBestMoveDisabled: Bool = false
+    var bestMoveAction: (() -> Void)? = nil
+    var showBestMoveButton: Bool = false
     
     private func hintButtonText(for step: Int) -> String {
         switch step {
