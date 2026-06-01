@@ -1,0 +1,26 @@
+# OS X
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+*.xcworkspace/*
+!*.xcworkspace/contents.xcworkspacedata
+# User settings
+xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Custom for ChessAnalyzer
+*.nnue
+*_log.txt
+engine_log.txt
+game_flow_log.txt
+test_result.txt
+chess.com-boards-and-pieces/
