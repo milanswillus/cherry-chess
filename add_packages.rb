@@ -1,6 +1,6 @@
 require 'xcodeproj'
 
-project_path = '/Users/milanswillus/dev/ChessAnalyzer/ChessAnalyzer.xcodeproj'
+project_path = '/Users/milanswillus/dev/ChessCompanion/ChessCompanion.xcodeproj'
 project = Xcodeproj::Project.open(project_path)
 
 target = project.targets.first

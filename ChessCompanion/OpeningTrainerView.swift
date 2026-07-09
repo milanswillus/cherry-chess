@@ -72,7 +72,7 @@ struct OpeningTrainerView: View {
     
     @State private var activeMode: TrainingMode = .menu
     @State private var activeMateScenario: MateScenario? = {
-        if FileManager.default.fileExists(atPath: "/Users/milanswillus/dev/ChessAnalyzer/run_simulation.txt") {
+        if FileManager.default.fileExists(atPath: "/Users/milanswillus/dev/ChessCompanion/run_simulation.txt") {
             return mateScenariosList.first { $0.id == "rook_mate" }
         }
         return nil

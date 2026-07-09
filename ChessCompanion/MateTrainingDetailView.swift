@@ -244,7 +244,7 @@ struct MateTrainingDetailView: View {
         .onAppear {
             resetScenario()
             
-            if FileManager.default.fileExists(atPath: "/Users/milanswillus/dev/ChessAnalyzer/run_simulation.txt") {
+            if FileManager.default.fileExists(atPath: "/Users/milanswillus/dev/ChessCompanion/run_simulation.txt") {
                 Task {
                     // Wait for engine to be ready
                     for _ in 0..<100 {
@@ -372,7 +372,7 @@ struct MateTrainingDetailView: View {
     }
     
     private func logGameFlow(_ message: String) {
-        let logPath = "/Users/milanswillus/dev/ChessAnalyzer/game_flow_log.txt"
+        let logPath = "/Users/milanswillus/dev/ChessCompanion/game_flow_log.txt"
         let logMsg = "[\(Date())] \(message)\n"
         if let data = logMsg.data(using: .utf8) {
             if let fileHandle = FileHandle(forWritingAtPath: logPath) {

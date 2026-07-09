@@ -20,7 +20,7 @@ struct ContentView: View {
     @StateObject private var analyzer = StockfishAnalyzer()
     @ObservedObject private var historyStore = GameHistoryStore.shared
     @State private var selectedTab: Int = {
-        if FileManager.default.fileExists(atPath: "/Users/milanswillus/dev/ChessAnalyzer/run_simulation.txt") {
+        if FileManager.default.fileExists(atPath: "/Users/milanswillus/dev/ChessCompanion/run_simulation.txt") {
             return 2
         }
         return 0

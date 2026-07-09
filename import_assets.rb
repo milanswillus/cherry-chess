@@ -1,8 +1,8 @@
 require 'fileutils'
 require 'json'
 
-src_dir = '/Users/milanswillus/dev/ChessAnalyzer/chess.com-boards-and-pieces/pieces/wood'
-dest_dir = '/Users/milanswillus/dev/ChessAnalyzer/ChessAnalyzer/Assets.xcassets'
+src_dir = '/Users/milanswillus/dev/ChessCompanion/chess.com-boards-and-pieces/pieces/wood'
+dest_dir = '/Users/milanswillus/dev/ChessCompanion/ChessCompanion/Assets.xcassets'
 
 Dir.glob("#{src_dir}/*.png").each do |file|
   filename = File.basename(file)

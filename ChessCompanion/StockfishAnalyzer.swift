@@ -54,7 +54,7 @@ class StockfishAnalyzer: ObservableObject {
             for await response in stream {
                 // Log response to file
                 let logMsg = "[\(Date())] Response: \(response)"
-                let logPath = "/Users/milanswillus/dev/ChessAnalyzer/engine_log.txt"
+                let logPath = "/Users/milanswillus/dev/ChessCompanion/engine_log.txt"
                 if let data = (logMsg + "\n").data(using: .utf8) {
                     if let fileHandle = FileHandle(forWritingAtPath: logPath) {
                         _ = try? fileHandle.seekToEnd()
@@ -87,7 +87,7 @@ class StockfishAnalyzer: ObservableObject {
                             let result2 = await self.evaluate(fen: testFen2, depth: 25, limitSkill: false)
                             
                             let resultStr = "Diagnostic test:\nResult1: bestMove=\(result1?.bestMove ?? "nil"), mate=\(String(describing: result1?.mate))\nResult2: bestMove=\(result2?.bestMove ?? "nil"), mate=\(String(describing: result2?.mate))\n"
-                            try? resultStr.write(toFile: "/Users/milanswillus/dev/ChessAnalyzer/test_result.txt", atomically: true, encoding: .utf8)
+                            try? resultStr.write(toFile: "/Users/milanswillus/dev/ChessCompanion/test_result.txt", atomically: true, encoding: .utf8)
                         }
                     }
                 case .info(let info):
