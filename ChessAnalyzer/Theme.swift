@@ -271,7 +271,7 @@ extension Font {
 struct ThemeToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         Button(action: {
-            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
                 configuration.isOn.toggle()
             }
         }) {
@@ -283,16 +283,42 @@ struct ThemeToggleStyle: ToggleStyle {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .background(Theme.panelBackground)
+            .background(
+                ZStack {
+                    Theme.panelBackground
+                    if configuration.isOn {
+                        Theme.accentColor.opacity(0.12)
+                    }
+                }
+            )
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(configuration.isOn ? Theme.accentColor : Color.white.opacity(0.08), lineWidth: configuration.isOn ? 1.5 : 1)
             )
+            .shadow(color: configuration.isOn ? Theme.accentColor.opacity(0.2) : Color.clear, radius: configuration.isOn ? 8 : 0, x: 0, y: 0)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(ThemeToggleButtonStyle())
     }
 }
+
+struct ThemeToggleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
+// Global uniform scale button style for consistent press feedback
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
 
 struct ScrollOffsetDetector: View {
     let coordinateSpace: String

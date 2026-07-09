@@ -46,6 +46,7 @@ struct MateTrainingDetailView: View {
                         .background(Theme.panelBackground)
                         .cornerRadius(isIPad ? 12 : 8)
                     }
+                    .buttonStyle(ScaleButtonStyle())
                     
                     Spacer()
                     
@@ -79,6 +80,7 @@ struct MateTrainingDetailView: View {
                                     .stroke(hintBestMoveArrow != nil ? Theme.accentColor : Color.white.opacity(0.06), lineWidth: hintBestMoveArrow != nil ? 2 : 1)
                             )
                         }
+                        .buttonStyle(ScaleButtonStyle())
                         .disabled(isProcessing || viewModel.gameOver)
                         
                         Button(action: resetScenario) {
@@ -94,6 +96,7 @@ struct MateTrainingDetailView: View {
                                         .stroke(Color.white.opacity(0.06), lineWidth: 1)
                                 )
                         }
+                        .buttonStyle(ScaleButtonStyle())
                     }
                 }
                 .padding()

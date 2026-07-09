@@ -8,6 +8,8 @@ struct CoordinateLearningView: View {
     @AppStorage("appTheme") private var appTheme = "standard"
     var onBack: (() -> Void)? = nil
     
+    @State private var scrollOffset: CGFloat = 0
+    
     var body: some View {
         let _ = appLanguage
         let _ = appTheme
@@ -30,211 +32,187 @@ struct CoordinateLearningView: View {
     
     // MARK: - Menu Screen
     private var menuView: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 24) {
-                if let onBack = onBack {
-                    HStack {
-                        Button(action: onBack) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "chevron.left")
-                                Text(L10n.tr("back"))
-                            }
-                            .font(.roundedSystem(.subheadline, weight: .bold))
-                            .foregroundColor(Theme.textMain)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Theme.panelBackground)
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal)
-                    .padding(.top, 16)
-                }
-                
-                // Header Title
-                VStack(spacing: 6) {
-                    Image(systemName: "target")
-                        .font(.system(size: 44))
-                        .foregroundColor(Theme.highlightSquare)
-                        .padding(.top, 12)
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+        return ZStack(alignment: .top) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    ScrollOffsetDetector(coordinateSpace: "coordinateTrainerContainer")
                     
-                    Text(L10n.tr("coord_title"))
-                        .font(.roundedSystem(.largeTitle, weight: .bold))
-                        .foregroundColor(.white)
+                    Spacer().frame(height: isIPad ? 224 : 216)
                     
-                    Text(L10n.tr("coord_desc"))
-                        .font(.roundedSystem(.subheadline))
-                        .foregroundColor(Theme.textSecondary)
-                }
-                .padding(.top, 8)
-                
-                // Modes Selection / Action Buttons (Packed up high!)
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(L10n.tr("select_mode"))
-                        .font(.roundedSystem(.headline, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal)
-                    
-                    VStack(spacing: 14) {
-                        // Rated Play Button Card (Styled like Endless!)
-                        Button(action: { viewModel.startGame(mode: .rated) }) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text(L10n.tr("start_rated"))
-                                        .font(.roundedSystem(.headline, weight: .bold))
-                                        .foregroundColor(.white)
-                                    Spacer()
-                                    Image(systemName: "play.fill")
-                                        .foregroundColor(Theme.accentColor)
-                                }
-                                
-                                Text(L10n.tr("rated_desc"))
-                                    .font(.roundedSystem(.caption))
-                                    .foregroundColor(Theme.textSecondary)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Theme.panelBackground)
-                            .cornerRadius(16)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-                        
-                        // Endless Play Button Card
-                        Button(action: { viewModel.startGame(mode: .endless) }) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text(L10n.tr("start_endless"))
-                                        .font(.roundedSystem(.headline, weight: .bold))
-                                        .foregroundColor(.white)
-                                    Spacer()
-                                    Image(systemName: "play.fill")
-                                        .foregroundColor(Theme.accentColor)
-                                }
-                                
-                                Text(L10n.tr("endless_desc"))
-                                    .font(.roundedSystem(.caption))
-                                    .foregroundColor(Theme.textSecondary)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Theme.panelBackground)
-                            .cornerRadius(16)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-                
-                // Settings Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(L10n.tr("settings"))
-                        .font(.roundedSystem(.headline, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal)
-                    
-                    HStack {
-                        Image(systemName: "character.textbox")
-                            .foregroundColor(Theme.accentColor)
-                        Text(L10n.tr("board_coordinates"))
-                            .font(.roundedSystem(.body))
+                    // Modes Selection / Action Buttons (Packed up high!)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L10n.tr("select_mode"))
+                            .font(.roundedSystem(.headline, weight: .bold))
                             .foregroundColor(.white)
-                        Spacer()
-                        Toggle("", isOn: $viewModel.showLabels)
-                            .labelsHidden()
-                            .toggleStyle(SwitchToggleStyle(tint: Theme.accentColor))
-                    }
-                    .padding()
-                    .background(Theme.panelBackground)
-                    .cornerRadius(16)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                    )
-                    .padding(.horizontal)
-                }
-                
-                // High Scores Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(L10n.tr("high_scores"))
-                        .font(.roundedSystem(.headline, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal)
-                    
-                    VStack(spacing: 12) {
-                        // Rated card
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Image(systemName: "clock.fill")
-                                    .foregroundColor(Theme.accentColor)
-                                Text(appLanguage == "de" ? "Rated (1 Minute)" : "Rated (1 Minute)")
-                                    .font(.roundedSystem(.subheadline, weight: .bold))
-                                    .foregroundColor(.white)
-                                Spacer()
-                            }
-                            
-                            HStack(spacing: 16) {
-                                scoreSubRow(title: L10n.tr("labeled"), value: "\(scoresStore.scores.ratedWithLabels) Elo")
-                                Spacer()
-                                scoreSubRow(title: L10n.tr("unlabeled"), value: "\(scoresStore.scores.ratedWithoutLabels) Elo")
-                            }
-                        }
-                        .padding()
-                        .background(Theme.panelBackground)
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                        )
+                            .padding(.horizontal)
                         
-                        // Endless card
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Image(systemName: "infinity")
-                                    .foregroundColor(Theme.accentColor)
-                                Text(appLanguage == "de" ? "Endless (Fehlerfrei)" : "Endless (Flawless)")
-                                    .font(.roundedSystem(.subheadline, weight: .bold))
-                                    .foregroundColor(.white)
-                                Spacer()
+                        VStack(spacing: 14) {
+                            // Rated Play Button Card (Styled like Endless!)
+                            Button(action: { viewModel.startGame(mode: .rated) }) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Text(L10n.tr("start_rated"))
+                                            .font(.roundedSystem(.headline, weight: .bold))
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                        Image(systemName: "play.fill")
+                                            .foregroundColor(Theme.accentColor)
+                                    }
+                                    
+                                    Text(L10n.tr("rated_desc"))
+                                        .font(.roundedSystem(.caption))
+                                        .foregroundColor(Theme.textSecondary)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Theme.panelBackground)
+                                .cornerRadius(16)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                )
                             }
+                            .buttonStyle(ScaleButtonStyle())
                             
-                            HStack(spacing: 16) {
-                                endlessScoreSubRow(
-                                    title: L10n.tr("labeled"),
-                                    score: scoresStore.scores.endlessWithLabels,
-                                    time: scoresStore.scores.endlessWithLabelsAvgTime
-                                )
-                                Spacer()
-                                endlessScoreSubRow(
-                                    title: L10n.tr("unlabeled"),
-                                    score: scoresStore.scores.endlessWithoutLabels,
-                                    time: scoresStore.scores.endlessWithoutLabelsAvgTime
+                            // Endless Play Button Card
+                            Button(action: { viewModel.startGame(mode: .endless) }) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Text(L10n.tr("start_endless"))
+                                            .font(.roundedSystem(.headline, weight: .bold))
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                        Image(systemName: "play.fill")
+                                            .foregroundColor(Theme.accentColor)
+                                    }
+                                    
+                                    Text(L10n.tr("endless_desc"))
+                                        .font(.roundedSystem(.caption))
+                                        .foregroundColor(Theme.textSecondary)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Theme.panelBackground)
+                                .cornerRadius(16)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
                                 )
                             }
+                            .buttonStyle(ScaleButtonStyle())
                         }
-                        .padding()
-                        .background(Theme.panelBackground)
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                        )
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
+                    
+                    // Settings Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L10n.tr("settings"))
+                            .font(.roundedSystem(.headline, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal)
+                        
+                        Toggle(L10n.tr("board_coordinates"), isOn: $viewModel.showLabels)
+                            .toggleStyle(ThemeToggleStyle())
+                            .padding(.horizontal)
+                    }
+                    
+                    // High Scores Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L10n.tr("high_scores"))
+                            .font(.roundedSystem(.headline, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal)
+                        
+                        VStack(spacing: 12) {
+                            // Rated card
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack {
+                                    Image(systemName: "clock.fill")
+                                        .foregroundColor(Theme.accentColor)
+                                    Text(appLanguage == "de" ? "Rated (1 Minute)" : "Rated (1 Minute)")
+                                        .font(.roundedSystem(.subheadline, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                }
+                                
+                                HStack(spacing: 16) {
+                                    scoreSubRow(title: L10n.tr("labeled"), value: "\(scoresStore.scores.ratedWithLabels) Elo")
+                                    Spacer()
+                                    scoreSubRow(title: L10n.tr("unlabeled"), value: "\(scoresStore.scores.ratedWithoutLabels) Elo")
+                                }
+                            }
+                            .padding()
+                            .background(Theme.panelBackground)
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                            )
+                            
+                            // Endless card
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack {
+                                    Image(systemName: "infinity")
+                                        .foregroundColor(Theme.accentColor)
+                                    Text(appLanguage == "de" ? "Endless (Fehlerfrei)" : "Endless (Flawless)")
+                                        .font(.roundedSystem(.subheadline, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                }
+                                
+                                HStack(spacing: 16) {
+                                    endlessScoreSubRow(
+                                        title: L10n.tr("labeled"),
+                                        score: scoresStore.scores.endlessWithLabels,
+                                        time: scoresStore.scores.endlessWithLabelsAvgTime
+                                    )
+                                    Spacer()
+                                    endlessScoreSubRow(
+                                        title: L10n.tr("unlabeled"),
+                                        score: scoresStore.scores.endlessWithoutLabels,
+                                        time: scoresStore.scores.endlessWithoutLabelsAvgTime
+                                    )
+                                }
+                            }
+                            .padding()
+                            .background(Theme.panelBackground)
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                            )
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.bottom, 24)
                 }
-                .padding(.bottom, 24)
+            }
+            
+            // Collapsible Header View at top
+            VStack(spacing: 0) {
+                Color.clear.frame(height: 0)
+                CollapsibleHeaderView(
+                    title: L10n.tr("coord_title"),
+                    subtitle: L10n.tr("coord_desc"),
+                    iconName: "target",
+                    scrollOffset: scrollOffset,
+                    backAction: onBack
+                )
+            }
+            .background(
+                Theme.background
+                    .opacity(scrollOffset < -5 ? 1.0 : 0.0)
+                    .ignoresSafeArea(edges: .top)
+            )
+            .animation(.easeInOut(duration: 0.15), value: scrollOffset < -5)
+        }
+        .coordinateSpace(name: "coordinateTrainerContainer")
+        .onPreferenceChange(TaggedScrollOffsetPreferenceKey.self) { values in
+            if let val = values["coordinateTrainerContainer"] {
+                self.scrollOffset = val
             }
         }
     }
@@ -276,6 +254,7 @@ struct CoordinateLearningView: View {
                         .font(.roundedSystem(.body, weight: .bold))
                         .foregroundColor(Theme.accentColor)
                 }
+                .buttonStyle(ScaleButtonStyle())
                 
                 Spacer()
                 
@@ -421,6 +400,7 @@ struct CoordinateLearningView: View {
                     .background(Theme.accentColor)
                     .cornerRadius(16)
                 }
+                .buttonStyle(ScaleButtonStyle())
                 
                 Button(action: { viewModel.reset() }) {
                     Text(L10n.tr("main_menu"))
@@ -435,6 +415,7 @@ struct CoordinateLearningView: View {
                                 .stroke(Color.white.opacity(0.06), lineWidth: 1)
                         )
                 }
+                .buttonStyle(ScaleButtonStyle())
             }
             .padding(.horizontal, 32)
             .padding(.bottom, 32)

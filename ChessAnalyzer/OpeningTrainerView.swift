@@ -434,10 +434,17 @@ struct OpeningCardView: View {
                         
                         // Show a quick preview of the first moves in a horizontal scroll view, very thin
                         ScrollView(.horizontal, showsIndicators: false) {
-                            Text(opening.moveNames.prefix(5).joined(separator: " "))
-                                .font(.system(size: cardSize * 0.065, weight: .thin, design: .rounded))
-                                .foregroundColor(Theme.accentColor)
-                                .lineLimit(1)
+                            HStack(spacing: 4) {
+                                ForEach(Array(opening.moveNames.prefix(5).enumerated()), id: \.offset) { index, name in
+                                    let isWhiteMove = index % 2 == 0
+                                    let cleanName = isWhiteMove ? name : name.replacingOccurrences(of: #"^\d+\.\.\.\s*"#, with: "", options: .regularExpression)
+                                    
+                                    Text(cleanName)
+                                        .font(.system(size: cardSize * 0.065, weight: .thin, design: .rounded))
+                                        .foregroundColor(isWhiteMove ? Theme.accentColor : Theme.accentColor.opacity(0.55))
+                                }
+                            }
+                            .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -506,15 +513,6 @@ struct MiniChessBoardView: View {
             }
         }
         .border(Color.black.opacity(0.35), width: 0.5)
-    }
-}
-
-// Button scale effect for premium feel
-struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 
@@ -739,8 +737,10 @@ struct OpeningTrainingDetailView: View {
                                         let name = viewModel.opening.moveNames[index]
                                         let isCurrent = viewModel.currentMoveIndex == index
                                         let isPlayed = viewModel.currentMoveIndex > index
+                                        let isWhiteMove = index % 2 == 0
+                                        let cleanName = isWhiteMove ? name : name.replacingOccurrences(of: #"^\d+\.\.\.\s*"#, with: "", options: .regularExpression)
                                         
-                                        Text(name)
+                                        Text(cleanName)
                                             .font(.caption.monospaced().bold())
                                             .padding(.horizontal, 10)
                                             .padding(.vertical, 6)
