@@ -3,6 +3,7 @@ import SwiftUI
 struct Theme {
     enum ThemeType: String, CaseIterable, Identifiable {
         case cherry = "cherry"
+        case frost = "frost"
         case standard = "standard"
         case darkNeon = "darkNeon"
         case midnightGold = "midnightGold"
@@ -15,6 +16,7 @@ struct Theme {
         var displayName: String {
             switch self {
             case .cherry: return L10n.tr("cherry")
+            case .frost: return L10n.tr("frost")
             case .standard: return L10n.tr("standard")
             case .darkNeon: return L10n.tr("dark_neon")
             case .midnightGold: return L10n.tr("midnight_gold")
@@ -34,6 +36,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 150/255, green: 55/255, blue: 68/255) // Maroon cherry dark square
+        case .frost:
+            return Color(red: 181/255, green: 189/255, blue: 200/255) // Light gray dark square
         case .standard:
             return Color(red: 119/255, green: 149/255, blue: 86/255) // #779556
         case .darkNeon:
@@ -41,7 +45,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 77/255, green: 58/255, blue: 47/255) // #4D3A2F
         case .sweetRose:
-            return Color(red: 196/255, green: 115/255, blue: 140/255) // #C4738C
+            return Color(red: 206/255, green: 150/255, blue: 170/255) // Medium rose dark square
         case .onyx:
             return Color(red: 43/255, green: 43/255, blue: 43/255) // #2B2B2B
         case .aquamarine:
@@ -53,6 +57,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 244/255, green: 227/255, blue: 230/255) // Soft blush light square
+        case .frost:
+            return Color(red: 239/255, green: 241/255, blue: 244/255) // Near-white light square
         case .standard:
             return Color(red: 235/255, green: 236/255, blue: 208/255) // #ebecd0
         case .darkNeon:
@@ -60,7 +66,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 205/255, green: 186/255, blue: 150/255) // #CDBA96
         case .sweetRose:
-            return Color(red: 251/255, green: 228/255, blue: 236/255) // #FBE4EC
+            return Color(red: 245/255, green: 232/255, blue: 238/255) // Light rose light square
         case .onyx:
             return Color(red: 237/255, green: 237/255, blue: 237/255) // #EDEDED
         case .aquamarine:
@@ -72,6 +78,8 @@ struct Theme {
         switch type {
         case .cherry:
             return Color(red: 244/255, green: 227/255, blue: 230/255)
+        case .frost:
+            return Color(red: 239/255, green: 241/255, blue: 244/255)
         case .standard:
             return Color(red: 235/255, green: 236/255, blue: 208/255)
         case .darkNeon:
@@ -79,7 +87,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 205/255, green: 186/255, blue: 150/255)
         case .sweetRose:
-            return Color(red: 251/255, green: 228/255, blue: 236/255)
+            return Color(red: 245/255, green: 232/255, blue: 238/255)
         case .onyx:
             return Color(red: 237/255, green: 237/255, blue: 237/255)
         case .aquamarine:
@@ -91,6 +99,8 @@ struct Theme {
         switch type {
         case .cherry:
             return Color(red: 150/255, green: 55/255, blue: 68/255)
+        case .frost:
+            return Color(red: 181/255, green: 189/255, blue: 200/255)
         case .standard:
             return Color(red: 119/255, green: 149/255, blue: 86/255)
         case .darkNeon:
@@ -98,7 +108,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 77/255, green: 58/255, blue: 47/255)
         case .sweetRose:
-            return Color(red: 196/255, green: 115/255, blue: 140/255)
+            return Color(red: 206/255, green: 150/255, blue: 170/255)
         case .onyx:
             return Color(red: 43/255, green: 43/255, blue: 43/255)
         case .aquamarine:
@@ -110,6 +120,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 204/255, green: 42/255, blue: 60/255).opacity(0.6) // Cherry selection
+        case .frost:
+            return Color(red: 72/255, green: 101/255, blue: 143/255).opacity(0.45) // Steel-blue selection
         case .standard:
             return Color(red: 245/255, green: 246/255, blue: 130/255).opacity(0.8) // #f5f682
         case .darkNeon:
@@ -117,7 +129,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 212/255, green: 175/255, blue: 55/255).opacity(0.65) // Soft Amber/Gold selection
         case .sweetRose:
-            return Color(red: 255/255, green: 92/255, blue: 138/255).opacity(0.65) // Hot pink selection
+            return Color(red: 194/255, green: 68/255, blue: 122/255).opacity(0.5) // Rose-magenta selection
         case .onyx:
             return Color(red: 190/255, green: 190/255, blue: 190/255).opacity(0.55) // Silver selection
         case .aquamarine:
@@ -129,6 +141,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 214/255, green: 96/255, blue: 112/255).opacity(0.3) // Soft cherry last move
+        case .frost:
+            return Color(red: 120/255, green: 150/255, blue: 190/255).opacity(0.35) // Soft blue last move
         case .standard:
             return Color(red: 245/255, green: 246/255, blue: 130/255).opacity(0.4) // Subtle standard yellow
         case .darkNeon:
@@ -136,7 +150,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 255/255, green: 179/255, blue: 0/255).opacity(0.25) // Warm Gold last move highlight
         case .sweetRose:
-            return Color(red: 255/255, green: 133/255, blue: 162/255).opacity(0.3) // Soft rose last move highlight
+            return Color(red: 222/255, green: 140/255, blue: 172/255).opacity(0.4) // Soft rose last move highlight
         case .onyx:
             return Color(red: 200/255, green: 200/255, blue: 200/255).opacity(0.3) // Soft gray last move highlight
         case .aquamarine:
@@ -148,6 +162,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 23/255, green: 11/255, blue: 14/255) // Deep wine-black
+        case .frost:
+            return Color(red: 237/255, green: 238/255, blue: 241/255) // Light cool gray
         case .standard:
             return Color(red: 48/255, green: 46/255, blue: 43/255) // #302E2B
         case .darkNeon:
@@ -155,7 +171,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 13/255, green: 13/255, blue: 17/255) // #0D0D11
         case .sweetRose:
-            return Color(red: 31/255, green: 17/255, blue: 22/255) // #1F1116
+            return Color(red: 224/255, green: 203/255, blue: 211/255) // Muted light rose background
         case .onyx:
             return Color(red: 18/255, green: 18/255, blue: 18/255) // #121212
         case .aquamarine:
@@ -167,6 +183,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 42/255, green: 22/255, blue: 26/255) // Dark wine panel
+        case .frost:
+            return Color(red: 255/255, green: 255/255, blue: 255/255) // White panel
         case .standard:
             return Color(red: 38/255, green: 37/255, blue: 34/255) // #262522
         case .darkNeon:
@@ -174,7 +192,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 24/255, green: 24/255, blue: 32/255) // #181820
         case .sweetRose:
-            return Color(red: 45/255, green: 25/255, blue: 33/255) // #2D1921
+            return Color(red: 243/255, green: 232/255, blue: 237/255) // Light rose-white panel
         case .onyx:
             return Color(red: 30/255, green: 30/255, blue: 30/255) // #1E1E1E
         case .aquamarine:
@@ -182,14 +200,30 @@ struct Theme {
         }
     }
     
+    /// True for light themes (dark text on light surfaces). Add light theme cases here.
+    static var isLight: Bool { current == .frost || current == .sweetRose }
+
+    /// Base color for hairline borders/overlays: white on dark themes, black on light themes.
+    /// Callers apply their own `.opacity(...)`. Keeps dark themes byte-identical to before.
+    static var line: Color { isLight ? Color.black : Color.white }
+
     static var textMain: Color {
-        return Color.white
+        switch current {
+        case .frost:
+            return Color(red: 26/255, green: 29/255, blue: 33/255) // Near-black text on light
+        case .sweetRose:
+            return Color(red: 58/255, green: 34/255, blue: 44/255) // Dark plum text on light rose
+        default:
+            return Color.white
+        }
     }
     
     static var textSecondary: Color {
         switch current {
         case .cherry:
             return Color(red: 195/255, green: 154/255, blue: 160/255) // Dusty rose-gray
+        case .frost:
+            return Color(red: 108/255, green: 114/255, blue: 124/255) // Medium gray
         case .standard:
             return Color(white: 0.6)
         case .darkNeon:
@@ -197,7 +231,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 168/255, green: 158/255, blue: 140/255) // Slate-Sand
         case .sweetRose:
-            return Color(red: 212/255, green: 168/255, blue: 182/255) // Dusty rose-gray
+            return Color(red: 138/255, green: 104/255, blue: 116/255) // Muted mauve on light
         case .onyx:
             return Color(red: 160/255, green: 160/255, blue: 160/255) // Neutral gray
         case .aquamarine:
@@ -210,6 +244,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 204/255, green: 42/255, blue: 60/255) // Cherry red #CC2A3C
+        case .frost:
+            return Color(red: 72/255, green: 101/255, blue: 143/255) // Steel blue #48658F
         case .standard:
             return Color(red: 119/255, green: 149/255, blue: 86/255) // Standard green
         case .darkNeon:
@@ -217,7 +253,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 212/255, green: 175/255, blue: 55/255) // Burnished Gold #D4AF37
         case .sweetRose:
-            return Color(red: 255/255, green: 82/255, blue: 123/255) // Sweet Pink #FF527B
+            return Color(red: 194/255, green: 68/255, blue: 122/255) // Rose-magenta #C2447A
         case .onyx:
             return Color(red: 224/255, green: 224/255, blue: 224/255) // Silver White #E0E0E0
         case .aquamarine:
@@ -230,6 +266,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 111/255, green: 203/255, blue: 147/255) // Fresh green (contrast)
+        case .frost:
+            return Color(red: 56/255, green: 142/255, blue: 88/255) // Green
         case .standard:
             return Color(red: 129/255, green: 182/255, blue: 76/255) // Green
         case .darkNeon:
@@ -237,7 +275,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 212/255, green: 175/255, blue: 55/255) // Gold
         case .sweetRose:
-            return Color(red: 107/255, green: 224/255, blue: 163/255) // Minty Green
+            return Color(red: 52/255, green: 150/255, blue: 100/255) // Green on light
         case .onyx:
             return Color(red: 240/255, green: 240/255, blue: 240/255) // Bright White
         case .aquamarine:
@@ -249,6 +287,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 204/255, green: 42/255, blue: 60/255) // Cherry red
+        case .frost:
+            return Color(red: 198/255, green: 62/255, blue: 62/255) // Red
         case .standard:
             return Color(red: 225/255, green: 61/255, blue: 61/255) // Red
         case .darkNeon:
@@ -256,7 +296,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 192/255, green: 57/255, blue: 43/255) // Soft Crimson
         case .sweetRose:
-            return Color(red: 255/255, green: 75/255, blue: 114/255) // Hot Crimson/Cherry
+            return Color(red: 198/255, green: 62/255, blue: 88/255) // Rose-red
         case .onyx:
             return Color(red: 120/255, green: 120/255, blue: 120/255) // Dim Gray
         case .aquamarine:
@@ -269,6 +309,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 204/255, green: 42/255, blue: 60/255).opacity(0.25) // Cherry premove
+        case .frost:
+            return Color(red: 198/255, green: 62/255, blue: 62/255).opacity(0.22) // Red premove
         case .standard:
             return Color.red.opacity(0.25)
         case .darkNeon:
@@ -276,7 +318,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 230/255, green: 81/255, blue: 0/255).opacity(0.25) // Burnt Orange
         case .sweetRose:
-            return Color(red: 255/255, green: 102/255, blue: 178/255).opacity(0.3) // Bubblegum Pink
+            return Color(red: 194/255, green: 68/255, blue: 122/255).opacity(0.25) // Rose premove
         case .onyx:
             return Color(red: 220/255, green: 220/255, blue: 220/255).opacity(0.28) // Silver premove
         case .aquamarine:
@@ -289,6 +331,8 @@ struct Theme {
         switch current {
         case .cherry:
             return Color(red: 230/255, green: 192/255, blue: 121/255).opacity(0.6) // Warm gold hint
+        case .frost:
+            return Color(red: 72/255, green: 101/255, blue: 143/255).opacity(0.5) // Steel-blue hint
         case .standard:
             return Color.blue.opacity(0.55)
         case .darkNeon:
@@ -296,7 +340,7 @@ struct Theme {
         case .midnightGold:
             return Color(red: 255/255, green: 179/255, blue: 0/255).opacity(0.6) // Glowing Warm Amber/Gold
         case .sweetRose:
-            return Color(red: 214/255, green: 162/255, blue: 232/255).opacity(0.65) // Glowing Sweet Lavender
+            return Color(red: 140/255, green: 96/255, blue: 190/255).opacity(0.5) // Soft violet hint
         case .onyx:
             return Color(red: 200/255, green: 200/255, blue: 200/255).opacity(0.55) // Glowing Silver
         case .aquamarine:
@@ -310,6 +354,12 @@ struct Theme {
         case .cherry:
             return LinearGradient(
                 colors: [Color(red: 204/255, green: 42/255, blue: 60/255), Color(red: 156/255, green: 28/255, blue: 54/255)], // Cherry to wine
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .frost:
+            return LinearGradient(
+                colors: [Color(red: 86/255, green: 116/255, blue: 158/255), Color(red: 60/255, green: 86/255, blue: 124/255)], // Steel blue ramp
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -333,7 +383,7 @@ struct Theme {
             )
         case .sweetRose:
             return LinearGradient(
-                colors: [Color(red: 235/255, green: 110/255, blue: 135/255), Color(red: 222/255, green: 127/255, blue: 146/255)], // Rose to muted blush
+                colors: [Color(red: 200/255, green: 80/255, blue: 132/255), Color(red: 170/255, green: 58/255, blue: 112/255)], // Rose-magenta ramp
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -409,7 +459,7 @@ struct ThemeToggleStyle: ToggleStyle {
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(configuration.isOn ? Theme.accentColor : Color.white.opacity(0.08), lineWidth: configuration.isOn ? 1.5 : 1)
+                    .stroke(configuration.isOn ? Theme.accentColor : Theme.line.opacity(0.08), lineWidth: configuration.isOn ? 1.5 : 1)
             )
         }
         .buttonStyle(ThemeToggleButtonStyle())
@@ -463,20 +513,10 @@ struct TaggedScrollOffsetPreferenceKey: PreferenceKey {
     }
 }
 
-// Backwards-compatible single-value preference key (kept for any legacy usage)
-struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 struct CollapsibleHeaderView: View {
     let title: String
     let subtitle: String
     let iconName: String
-    /// Optional emoji shown instead of the SF Symbol (e.g. a cherry, for which no SF Symbol exists).
-    var emojiIcon: String? = nil
     let scrollOffset: CGFloat
     var backAction: (() -> Void)? = nil
     
@@ -504,7 +544,7 @@ struct CollapsibleHeaderView: View {
                 .opacity(progress)
                 .overlay(
                     RoundedRectangle(cornerRadius: cardRadius)
-                        .stroke(Color.white.opacity(0.06 * progress), lineWidth: 1)
+                        .stroke(Theme.line.opacity(0.06 * progress), lineWidth: 1)
                 )
                 .shadow(color: Color.black.opacity(0.2 * progress), radius: 8, x: 0, y: 3)
             
@@ -533,11 +573,11 @@ struct CollapsibleHeaderView: View {
                         }
                         .foregroundColor(Theme.textMain)
                         .frame(width: backButtonWidth, height: backButtonHeight)
-                        .background(progress > 0.5 ? Color.white.opacity(0.08) : Theme.panelBackground)
+                        .background(progress > 0.5 ? Theme.line.opacity(0.08) : Theme.panelBackground)
                         .cornerRadius(8)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.white.opacity(progress > 0.5 ? 0.08 : 0.0), lineWidth: 1)
+                                .stroke(Theme.line.opacity(progress > 0.5 ? 0.08 : 0.0), lineWidth: 1)
                         )
                     }
                     .position(x: backX, y: backY)
@@ -552,17 +592,10 @@ struct CollapsibleHeaderView: View {
                 let iconCollapsedY: CGFloat = totalHeight / 2
                 let iconY = iconExpandedY + progress * (iconCollapsedY - iconExpandedY)
                 
-                Group {
-                    if let emojiIcon = emojiIcon {
-                        Text(emojiIcon)
-                            .font(.system(size: iconSize))
-                    } else {
-                        Image(systemName: iconName)
-                            .font(.system(size: iconSize, weight: .medium))
-                            .foregroundStyle(Theme.accentColor)
-                    }
-                }
-                .position(x: iconX, y: iconY)
+                Image(systemName: iconName)
+                    .font(.system(size: iconSize, weight: .medium))
+                    .foregroundStyle(Theme.accentColor)
+                    .position(x: iconX, y: iconY)
                 
                 // Title
                 let titleExpandedX = containerWidth / 2

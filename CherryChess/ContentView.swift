@@ -37,9 +37,7 @@ struct ContentView: View {
     @State private var showBestMoveArrow: (start: Square, end: Square)? = nil
     @State private var isAnalyzingHint = false
     @State private var hintBestMove: (start: Square, end: Square)? = nil
-    @AppStorage("showCounters") private var showCounters = true
     @AppStorage("showEvalBar") private var showEvalBar = false
-    @AppStorage("showLiveElo") private var showAccuracy = false
     @AppStorage("botName") private var botName = "Stockfish"
 
     // Player profile / onboarding
@@ -67,11 +65,6 @@ struct ContentView: View {
     @State private var activeBestMoveArrowOwner: (color: Piece.Color, isCurrent: Bool)? = nil
     @State private var showAnalysisTabAnalysis = true
     @State private var showAnalysisEvalBar = false
-    @State private var analysisSelectedElo: Double = 1500
-    @State private var isAnalysisTimed = false
-    @State private var analysisTimeControlMinutes: Double = 10
-    @State private var isAnalyzingAnalysisHint = false
-    @State private var analysisHintBestMove: (start: Square, end: Square)? = nil
     @State private var analysisScrollOffset: CGFloat = 0
     @State private var modeSelectionScrollOffset: CGFloat = 0
     @State private var setupScrollOffset: CGFloat = 0
@@ -123,22 +116,6 @@ struct ContentView: View {
         return nil
     }
     
-    var hindsightNode: HistoryNode? {
-        if viewModel.isExploringHistory {
-            if viewModel.historyIndex < viewModel.history.count {
-                return viewModel.history[viewModel.historyIndex]
-            }
-        } else {
-            if viewModel.history.count >= 2 {
-                let lastNode = viewModel.history.last
-                if lastNode?.movingColor == viewModel.engineColor {
-                    return viewModel.history[viewModel.history.count - 2]
-                }
-            }
-        }
-        return nil
-    }
-    
     func lastHistoryNode(for color: Piece.Color) -> HistoryNode? {
         let maxIndex = viewModel.isExploringHistory ? viewModel.historyIndex : (viewModel.history.count - 1)
         guard maxIndex >= 0, maxIndex < viewModel.history.count else { return nil }
@@ -151,6 +128,66 @@ struct ContentView: View {
         return nil
     }
     
+    /// Shows the best-move arrow for the given side's last move (game tab).
+    private func showGameBestMoveArrow(for color: Piece.Color) {
+        guard let node = lastHistoryNode(for: color),
+              let bestMoveStr = node.bestMoveStr,
+              let fen = node.fenBefore,
+              let position = Position(fen: fen),
+              let move = EngineLANParser.parse(move: bestMoveStr, for: node.movingColor ?? color, in: position) else { return }
+        withAnimation {
+            showBestMoveArrow = (start: move.start, end: move.end)
+        }
+    }
+
+    private func shouldShowGameBestMoveButton(for color: Piece.Color) -> Bool {
+        if viewModel.isChallengeMode {
+            return false
+        }
+        if viewModel.isFriendMode {
+            return viewModel.showBestMovesRetrospectively
+        }
+        if viewModel.showBestMovesRetrospectively {
+            return true
+        }
+        if showAnalysis,
+           let node = lastHistoryNode(for: color),
+           let classification = node.classification,
+           let bestMoveStr = node.bestMoveStr, !bestMoveStr.isEmpty,
+           (classification == .blunder || classification == .mistake || classification == .inaccuracy) {
+            return true
+        }
+        return false
+    }
+
+    /// Accuracy counter (fixed) with the captured pieces + move classifications
+    /// scrolling behind it. Pass `accuracy: nil` to hide the counter (challenge mode).
+    @ViewBuilder
+    private func playerStatsRow(vm: GameViewModel, player: Piece.Color, opponent: Piece.Color, accuracy: Double?) -> some View {
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+        HStack(alignment: .center, spacing: 8) {
+            if let accuracy {
+                AccuracyCounterView(accuracy: accuracy)
+                    .frame(width: isIPad ? 130 : 92, height: isIPad ? 40 : 34)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .center, spacing: 12) {
+                    MaterialCounterView(
+                        capturedPieces: vm.capturedPieces(for: opponent, on: vm.board),
+                        capturedColor: opponent,
+                        advantage: vm.materialScore(for: player, on: vm.board)
+                    )
+
+                    if !vm.isChallengeMode {
+                        ClassificationCounterView(counts: vm.classificationCounts(for: player))
+                            .frame(height: 28)
+                    }
+                }
+            }
+        }
+    }
+
     var isCheckmate: Bool {
         isCheckmate(for: viewModel)
     }
@@ -166,34 +203,6 @@ struct ContentView: View {
             return true
         }
         return false
-    }
-    
-    var displayBestMoveStr: String? {
-        if viewModel.isExploringHistory {
-            return viewModel.history[viewModel.historyIndex].bestMoveStr
-        }
-        return viewModel.lastBestMoveStr
-    }
-    
-    var displayFenBefore: String? {
-        if viewModel.isExploringHistory {
-            return viewModel.history[viewModel.historyIndex].fenBefore
-        }
-        return viewModel.lastPlayerMoveFenBefore
-    }
-    
-    var displayMovingColor: Piece.Color {
-        if viewModel.isExploringHistory {
-            return viewModel.history[viewModel.historyIndex].movingColor ?? viewModel.playerColor
-        }
-        return viewModel.history.last?.movingColor ?? viewModel.playerColor
-    }
-    
-    var displayMate: Int? {
-        if viewModel.isExploringHistory {
-            return viewModel.history[viewModel.historyIndex].mate
-        }
-        return viewModel.history.last?.mate
     }
     
     func mateIn(for color: Piece.Color, vm: GameViewModel) -> Int? {
@@ -220,55 +229,10 @@ struct ContentView: View {
         openingName(for: analysisViewModel)
     }
     
-    var analysisHindsightNode: HistoryNode? {
-        if analysisViewModel.isExploringHistory {
-            if analysisViewModel.historyIndex < analysisViewModel.history.count {
-                return analysisViewModel.history[analysisViewModel.historyIndex]
-            }
-        } else {
-            if analysisViewModel.history.count >= 2 {
-                return analysisViewModel.history[analysisViewModel.history.count - 2]
-            }
-        }
-        return nil
-    }
-    
     var isAnalysisCheckmate: Bool {
         isCheckmate(for: analysisViewModel)
     }
-    
-    var displayAnalysisBestMoveStr: String? {
-        if analysisViewModel.isExploringHistory {
-            return analysisViewModel.history[analysisViewModel.historyIndex].bestMoveStr
-        }
-        return analysisViewModel.lastBestMoveStr
-    }
-    
-    var displayAnalysisFenBefore: String? {
-        if analysisViewModel.isExploringHistory {
-            return analysisViewModel.history[analysisViewModel.historyIndex].fenBefore
-        }
-        return analysisViewModel.lastPlayerMoveFenBefore
-    }
-    
-    var displayAnalysisMovingColor: Piece.Color {
-        if analysisViewModel.isExploringHistory {
-            return analysisViewModel.history[analysisViewModel.historyIndex].movingColor ?? analysisViewModel.playerColor
-        }
-        return analysisViewModel.history.last?.movingColor ?? analysisViewModel.playerColor
-    }
-    
-    private func findKingSquare(for color: Piece.Color, on board: Board) -> Square? {
-        for square in Square.allCases {
-            if let piece = board.position.piece(at: square),
-               piece.kind == .king,
-               piece.color == color {
-                return square
-            }
-        }
-        return nil
-    }
-    
+
     private func resetHints() {
         viewModel.hintStep = 0
         viewModel.hintCorrectSquare = nil
@@ -383,69 +347,16 @@ struct ContentView: View {
             // Promotion Picker Overlay (Clean, premium custom modal)
             let activePromoVM = (selectedTab == 3) ? analysisViewModel : viewModel
             if activePromoVM.showPromotionPicker || activePromoVM.showPremovePromotionPicker {
-                ZStack {
-                    Color.black.opacity(0.4)
-                        .ignoresSafeArea()
-                    
-                    VStack(spacing: 20) {
-                        Text(appLanguage == "de" ? "Bauernumwandlung" : "Pawn Promotion")
-                            .font(.system(.headline, design: .rounded).bold())
-                            .foregroundColor(.white)
-                            .tracking(1.0)
-                        
-                        HStack(spacing: 16) {
-                            let promotingColor = activePromoVM.showPremovePromotionPicker ? activePromoVM.playerColor : activePromoVM.board.position.sideToMove
-                            let colorPrefix = promotingColor == .white ? "w" : "b"
-                            let options: [(Piece.Kind, String)] = [
-                                (.queen, "q"),
-                                (.rook, "r"),
-                                (.bishop, "b"),
-                                (.knight, "n")
-                            ]
-                            
-                            ForEach(options, id: \.0) { kind, suffix in
-                                Button(action: {
-                                    withAnimation {
-                                        if activePromoVM.showPremovePromotionPicker {
-                                            activePromoVM.completePremovePromotion(to: kind)
-                                        } else {
-                                            activePromoVM.completePromotion(to: kind)
-                                        }
-                                    }
-                                }) {
-                                    VStack(spacing: 8) {
-                                        Image(colorPrefix + suffix)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 44, height: 44)
-                                            .padding(10)
-                                            .background(Theme.panelBackground)
-                                            .cornerRadius(12)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                            )
-                                        
-                                        Text(pieceKindName(kind))
-                                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                                            .foregroundColor(Theme.textSecondary)
-                                    }
-                                }
-                                .buttonStyle(ScaleButtonStyle())
-                            }
+                PromotionPickerView(
+                    promotingColor: activePromoVM.showPremovePromotionPicker ? activePromoVM.playerColor : activePromoVM.board.position.sideToMove,
+                    onSelect: { kind in
+                        if activePromoVM.showPremovePromotionPicker {
+                            activePromoVM.completePremovePromotion(to: kind)
+                        } else {
+                            activePromoVM.completePromotion(to: kind)
                         }
                     }
-                    .padding(.vertical, 24)
-                    .padding(.horizontal, 28)
-                    .background(Theme.panelBackground)
-                    .cornerRadius(24)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1.5)
-                    )
-                    .shadow(color: Color.black.opacity(0.3), radius: 12, x: 0, y: 6)
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
-                }
+                )
                 .zIndex(200)
             }
         }
@@ -520,7 +431,7 @@ struct ContentView: View {
                     let screenWidth = screenGeo.size.width
                     let screenHeight = screenGeo.size.height
                     let isIPad = UIDevice.current.userInterfaceIdiom == .pad
-                    let maxBoardSize = isIPad ? (screenHeight * 0.68) : (screenHeight * 0.55)
+                    let maxBoardSize = isIPad ? (screenHeight * 0.64) : (screenHeight * 0.51)
                     let baseBoardWidth = showEvalBar ? (screenWidth - 56) : (screenWidth - 32)
                     let boardWidth = min(baseBoardWidth, maxBoardSize)
                     let topColor = viewModel.boardFlipped ? Piece.Color.white : Piece.Color.black
@@ -530,6 +441,7 @@ struct ContentView: View {
                     // Top controls
                     HStack(spacing: isIPad ? 12 : 6) {
                         Button(action: {
+                            viewModel.stopClock()
                             isGameActive = false
                         }) {
                             HStack(spacing: 4) {
@@ -563,6 +475,7 @@ struct ContentView: View {
                         }
 
                         Button(action: {
+                            viewModel.stopClock()
                             isGameActive = false
                         }) {
                             Text(L10n.tr("new_game"))
@@ -594,7 +507,7 @@ struct ContentView: View {
                         .cornerRadius(isIPad ? 12 : 8)
                         .overlay(
                             RoundedRectangle(cornerRadius: isIPad ? 12 : 8)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                         )
                         .padding(.horizontal, 16)
 
@@ -609,7 +522,7 @@ struct ContentView: View {
                                 Text(appLanguage == "de" ? "Ohne Zeit weiterspielen" : "Continue without clock")
                             }
                             .font(isIPad ? .title3.bold() : .headline.bold())
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, isIPad ? 16 : 14)
                             .background(Theme.accentColor)
@@ -643,55 +556,18 @@ struct ContentView: View {
                             isAnalyzingHint: isAnalyzingHint,
                             isBestMoveDisabled: lastHistoryNode(for: topColor) == nil || lastHistoryNode(for: topColor)?.bestMoveStr == nil,
                             bestMoveAction: {
-                                let node = lastHistoryNode(for: topColor)
-                                if let node = node,
-                                   let bestMoveStr = node.bestMoveStr,
-                                   let fen = node.fenBefore,
-                                   let position = Position(fen: fen),
-                                   let move = EngineLANParser.parse(move: bestMoveStr, for: node.movingColor ?? topColor, in: position) {
-                                    withAnimation {
-                                        showBestMoveArrow = (start: move.start, end: move.end)
-                                    }
-                                }
+                                showGameBestMoveArrow(for: topColor)
                             },
-                            showBestMoveButton: {
-                                if viewModel.isChallengeMode {
-                                    return false
-                                }
-                                if viewModel.isFriendMode {
-                                    return viewModel.showBestMovesRetrospectively
-                                }
-                                if viewModel.showBestMovesRetrospectively {
-                                    return true
-                                }
-                                if showAnalysis,
-                                   let node = lastHistoryNode(for: topColor),
-                                   let classification = node.classification,
-                                   let bestMoveStr = node.bestMoveStr, !bestMoveStr.isEmpty,
-                                   (classification == .blunder || classification == .mistake || classification == .inaccuracy) {
-                                    return true
-                                }
-                                return false
-                            }(),
-                            showHintButton: viewModel.isFriendMode ? (viewModel.allowHints && viewModel.board.position.sideToMove == topColor) : false,
-                            showAccuracy: !viewModel.isChallengeMode,
-                            accuracyValue: viewModel.accuracy(for: topColor, upTo: viewModel.isExploringHistory ? viewModel.historyIndex : (viewModel.history.count - 1))
+                            showBestMoveButton: shouldShowGameBestMoveButton(for: topColor),
+                            showHintButton: viewModel.isFriendMode ? (viewModel.allowHints && viewModel.board.position.sideToMove == topColor) : false
                         )
-                        
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(alignment: .center, spacing: 12) {
-                                MaterialCounterView(
-                                    capturedPieces: viewModel.capturedPieces(for: bottomColor, on: viewModel.board),
-                                    capturedColor: bottomColor,
-                                    advantage: viewModel.materialScore(for: topColor, on: viewModel.board)
-                                )
-                                
-                                if !viewModel.isChallengeMode {
-                                    ClassificationCounterView(counts: viewModel.classificationCounts(for: topColor))
-                                        .frame(height: 28)
-                                }
-                            }
-                        }
+
+                        playerStatsRow(
+                            vm: viewModel,
+                            player: topColor,
+                            opponent: bottomColor,
+                            accuracy: viewModel.isChallengeMode ? nil : viewModel.accuracy(for: topColor, upTo: viewModel.isExploringHistory ? viewModel.historyIndex : (viewModel.history.count - 1))
+                        )
                     }
                     .padding(.horizontal)
                     
@@ -735,55 +611,18 @@ struct ContentView: View {
                             isAnalyzingHint: isAnalyzingHint,
                             isBestMoveDisabled: lastHistoryNode(for: bottomColor) == nil || lastHistoryNode(for: bottomColor)?.bestMoveStr == nil,
                             bestMoveAction: {
-                                let node = lastHistoryNode(for: bottomColor)
-                                if let node = node,
-                                   let bestMoveStr = node.bestMoveStr,
-                                   let fen = node.fenBefore,
-                                   let position = Position(fen: fen),
-                                   let move = EngineLANParser.parse(move: bestMoveStr, for: node.movingColor ?? bottomColor, in: position) {
-                                    withAnimation {
-                                        showBestMoveArrow = (start: move.start, end: move.end)
-                                    }
-                                }
+                                showGameBestMoveArrow(for: bottomColor)
                             },
-                            showBestMoveButton: {
-                                if viewModel.isChallengeMode {
-                                    return false
-                                }
-                                if viewModel.isFriendMode {
-                                    return viewModel.showBestMovesRetrospectively
-                                }
-                                if viewModel.showBestMovesRetrospectively {
-                                    return true
-                                }
-                                if showAnalysis,
-                                   let node = lastHistoryNode(for: bottomColor),
-                                   let classification = node.classification,
-                                   let bestMoveStr = node.bestMoveStr, !bestMoveStr.isEmpty,
-                                   (classification == .blunder || classification == .mistake || classification == .inaccuracy) {
-                                    return true
-                                }
-                                return false
-                            }(),
-                            showHintButton: viewModel.isChallengeMode ? false : (viewModel.isFriendMode ? (viewModel.allowHints && viewModel.board.position.sideToMove == bottomColor) : viewModel.allowHints),
-                            showAccuracy: !viewModel.isChallengeMode,
-                            accuracyValue: viewModel.isFriendMode ? viewModel.accuracy(for: bottomColor, upTo: viewModel.isExploringHistory ? viewModel.historyIndex : (viewModel.history.count - 1)) : viewModel.playerAccuracy
+                            showBestMoveButton: shouldShowGameBestMoveButton(for: bottomColor),
+                            showHintButton: viewModel.isChallengeMode ? false : (viewModel.isFriendMode ? (viewModel.allowHints && viewModel.board.position.sideToMove == bottomColor) : viewModel.allowHints)
                         )
-                        
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(alignment: .center, spacing: 12) {
-                                MaterialCounterView(
-                                    capturedPieces: viewModel.capturedPieces(for: topColor, on: viewModel.board),
-                                    capturedColor: topColor,
-                                    advantage: viewModel.materialScore(for: bottomColor, on: viewModel.board)
-                                )
-                                
-                                if !viewModel.isChallengeMode {
-                                    ClassificationCounterView(counts: viewModel.classificationCounts(for: bottomColor))
-                                        .frame(height: 28)
-                                }
-                            }
-                        }
+
+                        playerStatsRow(
+                            vm: viewModel,
+                            player: bottomColor,
+                            opponent: topColor,
+                            accuracy: viewModel.isChallengeMode ? nil : (viewModel.isFriendMode ? viewModel.accuracy(for: bottomColor, upTo: viewModel.isExploringHistory ? viewModel.historyIndex : (viewModel.history.count - 1)) : viewModel.playerAccuracy)
+                        )
                     }
                     .padding(.horizontal)
                     Group {
@@ -849,8 +688,8 @@ struct ContentView: View {
                     }
                     .padding(.horizontal)
                     }
-                    .padding(.top, isIPad ? 14 : 10)
-                    .padding(.bottom, isIPad ? 36 : 30)
+                    .padding(.top, isIPad ? 6 : 4)
+                    .padding(.bottom, isIPad ? 12 : 8)
                     .frame(width: screenGeo.size.width, height: screenGeo.size.height)
                 }
             }
@@ -1144,8 +983,6 @@ struct ContentView: View {
         analysisViewModel.hintCorrectSquare = nil
         analysisViewModel.hintAlternativeSquare = nil
         showAnalysisBestMoveArrow = nil
-        analysisHintBestMove = nil
-        isAnalyzingAnalysisHint = false
         activeBestMoveArrowOwner = nil
     }
     
@@ -1198,52 +1035,6 @@ struct ContentView: View {
                         activeBestMoveArrowOwner = (color, false)
                     }
                 }
-            }
-        }
-    }
-    
-    private func requestAnalysisHint() {
-        guard !analysisViewModel.isProcessing else { return }
-        
-        if analysisViewModel.hintStep == 0 {
-            isAnalyzingAnalysisHint = true
-            let fen = analysisViewModel.board.position.fen
-            let activeColor = analysisViewModel.board.position.sideToMove
-            Task {
-                let result = await evaluateWithCache(fen: fen, depth: 10, limitSkill: false, movetime: 300)
-                
-                await MainActor.run {
-                    isAnalyzingAnalysisHint = false
-                    guard analysisViewModel.board.position.fen == fen else { return }
-                    
-                    if let bestMoveStr = result?.bestMove,
-                       let move = EngineLANParser.parse(move: bestMoveStr, for: activeColor, in: analysisViewModel.board.position) {
-                        
-                        analysisHintBestMove = (start: move.start, end: move.end)
-                        analysisViewModel.hintCorrectSquare = move.start
-                        analysisViewModel.hintAlternativeSquare = findPlausiblePawnOrPiece(correctSquare: move.start, board: analysisViewModel.board, playerColor: activeColor)
-                        withAnimation {
-                            analysisViewModel.hintStep = 1
-                            showAnalysisBestMoveArrow = nil
-                        }
-                    }
-                }
-            }
-        } else if analysisViewModel.hintStep == 1 {
-            withAnimation {
-                analysisViewModel.hintStep = 2
-                showAnalysisBestMoveArrow = nil
-            }
-        } else if analysisViewModel.hintStep == 2 {
-            withAnimation {
-                analysisViewModel.hintStep = 3
-                if let bestMove = analysisHintBestMove {
-                    showAnalysisBestMoveArrow = bestMove
-                }
-            }
-        } else {
-            withAnimation {
-                resetAnalysisHints()
             }
         }
     }
@@ -1406,9 +1197,9 @@ struct ContentView: View {
                                     .cornerRadius(16)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 16)
-                                            .stroke(analysisViewModel.playerColorChoice == choice ? Theme.accentColor : Color.white.opacity(0.06), lineWidth: analysisViewModel.playerColorChoice == choice ? 2 : 1)
+                                            .stroke(analysisViewModel.playerColorChoice == choice ? Theme.accentColor : Theme.line.opacity(0.06), lineWidth: analysisViewModel.playerColorChoice == choice ? 2 : 1)
                                     )
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Theme.textMain)
                                 }
                                 .buttonStyle(ScaleButtonStyle())
                             }
@@ -1428,7 +1219,7 @@ struct ContentView: View {
                     }) {
                         Text(L10n.tr("start_analysis"))
                             .font(.roundedSystem(.headline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(Theme.primaryGradient)
@@ -1481,15 +1272,12 @@ struct ContentView: View {
             if !isAnalysisGameActive {
                 analysisSetupView
                     .transition(.opacity)
-                    .onAppear {
-                        analysisSelectedElo = Double(analyzer.currentElo)
-                    }
             } else {
                 GeometryReader { screenGeo in
                     let screenWidth = screenGeo.size.width
                     let screenHeight = screenGeo.size.height
                     let isIPad = UIDevice.current.userInterfaceIdiom == .pad
-                    let maxBoardSize = isIPad ? (screenHeight * 0.68) : (screenHeight * 0.55)
+                    let maxBoardSize = isIPad ? (screenHeight * 0.64) : (screenHeight * 0.51)
                     let baseBoardWidth = showAnalysisEvalBar ? (screenWidth - 56) : (screenWidth - 32)
                     let boardWidth = min(baseBoardWidth, maxBoardSize)
                     
@@ -1561,12 +1349,10 @@ struct ContentView: View {
                             .cornerRadius(isIPad ? 12 : 8)
                             .overlay(
                                 RoundedRectangle(cornerRadius: isIPad ? 12 : 8)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                             .padding(.horizontal, 16)
 
-                        Spacer(minLength: 0)
-                        
                         // Top Profile
                         VStack(spacing: 4) {
                             PlayerProfileView(
@@ -1595,23 +1381,15 @@ struct ContentView: View {
                                 }(),
                                 bestMoveAction: {
                                     handleAnalysisBestMoveTapped(for: topColor)
-                                },
-                                showAccuracy: true,
-                                accuracyValue: analysisViewModel.accuracy(for: topColor, upTo: analysisViewModel.historyIndex)
-                            )
-                            
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(alignment: .center, spacing: 12) {
-                                    MaterialCounterView(
-                                        capturedPieces: analysisViewModel.capturedPieces(for: bottomColor, on: analysisViewModel.board),
-                                        capturedColor: bottomColor,
-                                        advantage: analysisViewModel.materialScore(for: topColor, on: analysisViewModel.board)
-                                    )
-                                    
-                                    ClassificationCounterView(counts: analysisViewModel.classificationCounts(for: topColor))
-                                        .frame(height: 28)
                                 }
-                            }
+                            )
+
+                            playerStatsRow(
+                                vm: analysisViewModel,
+                                player: topColor,
+                                opponent: bottomColor,
+                                accuracy: analysisViewModel.accuracy(for: topColor, upTo: analysisViewModel.historyIndex)
+                            )
                         }
                         .padding(.horizontal)
                         
@@ -1633,9 +1411,7 @@ struct ContentView: View {
                             }
                         }
                         .padding(.horizontal)
-                        
-                        Spacer(minLength: 0)
-                        
+
                         // Bottom Profile
                         VStack(spacing: 4) {
                             PlayerProfileView(
@@ -1664,23 +1440,15 @@ struct ContentView: View {
                                 }(),
                                 bestMoveAction: {
                                     handleAnalysisBestMoveTapped(for: bottomColor)
-                                },
-                                showAccuracy: true,
-                                accuracyValue: analysisViewModel.accuracy(for: bottomColor, upTo: analysisViewModel.historyIndex)
-                            )
-                            
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(alignment: .center, spacing: 12) {
-                                    MaterialCounterView(
-                                        capturedPieces: analysisViewModel.capturedPieces(for: topColor, on: analysisViewModel.board),
-                                        capturedColor: topColor,
-                                        advantage: analysisViewModel.materialScore(for: bottomColor, on: analysisViewModel.board)
-                                    )
-                                    
-                                    ClassificationCounterView(counts: analysisViewModel.classificationCounts(for: bottomColor))
-                                        .frame(height: 28)
                                 }
-                            }
+                            )
+
+                            playerStatsRow(
+                                vm: analysisViewModel,
+                                player: bottomColor,
+                                opponent: topColor,
+                                accuracy: analysisViewModel.accuracy(for: bottomColor, upTo: analysisViewModel.historyIndex)
+                            )
                         }
                         .padding(.horizontal)
                         
@@ -1769,10 +1537,13 @@ struct ContentView: View {
                                     }
                                     .disabled(analysisViewModel.historyIndex == analysisViewModel.history.count - 1)
                                 }
+                                .padding(.horizontal)
                             }
+
+                        Spacer(minLength: 0)
                     }
-                    .padding(.top, isIPad ? 14 : 10)
-                    .padding(.bottom, isIPad ? 36 : 30)
+                    .padding(.top, isIPad ? 6 : 4)
+                    .padding(.bottom, isIPad ? 12 : 8)
                     .frame(width: screenGeo.size.width, height: screenGeo.size.height)
                 }
             }
@@ -1852,7 +1623,7 @@ struct ContentView: View {
                     }) {
                         Text(L10n.tr("start_game"))
                             .font(.roundedSystem(.headline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(Theme.primaryGradient)
@@ -1886,9 +1657,9 @@ struct ContentView: View {
                                     .cornerRadius(16)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 16)
-                                            .stroke(viewModel.playerColorChoice == choice ? Theme.accentColor : Color.white.opacity(0.06), lineWidth: viewModel.playerColorChoice == choice ? 2 : 1)
+                                            .stroke(viewModel.playerColorChoice == choice ? Theme.accentColor : Theme.line.opacity(0.06), lineWidth: viewModel.playerColorChoice == choice ? 2 : 1)
                                     )
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Theme.textMain)
                                 }
                                 .buttonStyle(ScaleButtonStyle())
                             }
@@ -1931,7 +1702,7 @@ struct ContentView: View {
                         .cornerRadius(16)
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
-                                .stroke(challengeMode ? Theme.accentColor : Color.white.opacity(0.06), lineWidth: challengeMode ? 2 : 1)
+                                .stroke(challengeMode ? Theme.accentColor : Theme.line.opacity(0.06), lineWidth: challengeMode ? 2 : 1)
                         )
                     }
                     .buttonStyle(ScaleButtonStyle())
@@ -1955,7 +1726,7 @@ struct ContentView: View {
                             
                             Text(difficultyLabel(for: Int(selectedElo)))
                                 .font(.roundedSystem(.caption, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(Theme.textMain)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 4)
                                 .background(Theme.accentColor.opacity(0.15))
@@ -1970,7 +1741,7 @@ struct ContentView: View {
                         .cornerRadius(16)
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                         )
                     }
                     .padding(.horizontal)
@@ -1995,14 +1766,14 @@ struct ContentView: View {
                                             Spacer()
                                             Text("\(Int(timeControlMinutes))")
                                                 .font(.roundedSystem(.subheadline, weight: .bold))
-                                                .foregroundColor(.white)
+                                                .foregroundColor(Theme.textMain)
                                         }
                                         Slider(value: $timeControlMinutes, in: 1...60, step: 1)
                                             .tint(Theme.accentColor)
                                     }
                                     
                                     Divider()
-                                        .background(Color.white.opacity(0.12))
+                                        .background(Theme.line.opacity(0.12))
                                     
                                     VStack(alignment: .leading, spacing: 8) {
                                         HStack {
@@ -2012,7 +1783,7 @@ struct ContentView: View {
                                             Spacer()
                                             Text("\(Int(timeControlIncrementSeconds))")
                                                 .font(.roundedSystem(.subheadline, weight: .bold))
-                                                .foregroundColor(.white)
+                                                .foregroundColor(Theme.textMain)
                                         }
                                         Slider(value: $timeControlIncrementSeconds, in: 1...10, step: 1)
                                             .tint(Theme.accentColor)
@@ -2024,7 +1795,7 @@ struct ContentView: View {
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                        .stroke(Theme.line.opacity(0.08), lineWidth: 1)
                                 )
                                 .transition(.move(edge: .top).combined(with: .opacity))
                             }
@@ -2053,7 +1824,7 @@ struct ContentView: View {
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                         } else {
                             VStack(spacing: 12) {
@@ -2139,7 +1910,7 @@ struct ContentView: View {
                             .cornerRadius(24)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 24)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -2171,7 +1942,7 @@ struct ContentView: View {
                             .cornerRadius(24)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 24)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -2187,7 +1958,6 @@ struct ContentView: View {
                     title: L10n.tr("choose_mode"),
                     subtitle: L10n.tr("choose_mode_subtitle"),
                     iconName: "gamecontroller.fill",
-                    emojiIcon: "🍒",
                     scrollOffset: modeSelectionScrollOffset
                 )
             }
@@ -2233,7 +2003,7 @@ struct ContentView: View {
                     }) {
                         Text(L10n.tr("start_game"))
                             .font(.roundedSystem(.headline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(Theme.primaryGradient)
@@ -2264,14 +2034,14 @@ struct ContentView: View {
                                             Spacer()
                                             Text("\(Int(timeControlMinutes))")
                                                 .font(.roundedSystem(.subheadline, weight: .bold))
-                                                .foregroundColor(.white)
+                                                .foregroundColor(Theme.textMain)
                                         }
                                         Slider(value: $timeControlMinutes, in: 1...60, step: 1)
                                             .tint(Theme.accentColor)
                                     }
                                     
                                     Divider()
-                                        .background(Color.white.opacity(0.12))
+                                        .background(Theme.line.opacity(0.12))
                                     
                                     VStack(alignment: .leading, spacing: 8) {
                                         HStack {
@@ -2281,7 +2051,7 @@ struct ContentView: View {
                                             Spacer()
                                             Text("\(Int(timeControlIncrementSeconds))")
                                                 .font(.roundedSystem(.subheadline, weight: .bold))
-                                                .foregroundColor(.white)
+                                                .foregroundColor(Theme.textMain)
                                         }
                                         Slider(value: $timeControlIncrementSeconds, in: 1...10, step: 1)
                                             .tint(Theme.accentColor)
@@ -2293,7 +2063,7 @@ struct ContentView: View {
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                        .stroke(Theme.line.opacity(0.08), lineWidth: 1)
                                 )
                                 .transition(.move(edge: .top).combined(with: .opacity))
                             }
@@ -2397,7 +2167,7 @@ struct ContentView: View {
         .cornerRadius(isIPad ? 32 : 24)
         .overlay(
             RoundedRectangle(cornerRadius: isIPad ? 32 : 24)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(Theme.line.opacity(0.06), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 3)
         .padding(.horizontal, isIPad ? 24 : 16)
@@ -2435,21 +2205,6 @@ struct ContentView: View {
         }
         .buttonStyle(ScaleButtonStyle())
     }
-    
-    private func pieceKindName(_ kind: Piece.Kind) -> String {
-        switch kind {
-        case .queen:
-            return appLanguage == "de" ? "Dame" : "Queen"
-        case .rook:
-            return appLanguage == "de" ? "Turm" : "Rook"
-        case .bishop:
-            return appLanguage == "de" ? "Läufer" : "Bishop"
-        case .knight:
-            return appLanguage == "de" ? "Springer" : "Knight"
-        default:
-            return ""
-        }
-    }
 }
 
 struct SettingsView: View {
@@ -2457,7 +2212,6 @@ struct SettingsView: View {
     var onClose: (() -> Void)? = nil
     @AppStorage("appLanguage") private var appLanguage = "de"
     @AppStorage("appTheme") private var appTheme = "cherry"
-    @AppStorage("appIcon") private var appIcon = "elysium"
     @AppStorage("showBoardCoordinates") private var showBoardCoordinates = true
     @AppStorage("hapticFeedbackEnabled") private var hapticFeedbackEnabled = true
     @AppStorage("screenShakeEnabled") private var screenShakeEnabled = false
@@ -2496,18 +2250,18 @@ struct SettingsView: View {
                                     .foregroundColor(Theme.textSecondary)
                                 TextField(L10n.tr("onboarding_name_placeholder"), text: $playerName)
                                     .font(.roundedSystem(.body, weight: .bold))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Theme.textMain)
                                     .padding(.vertical, 8)
                                     .padding(.horizontal, 12)
                                     .background(Color.black.opacity(0.20))
                                     .cornerRadius(8)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                            .stroke(Theme.line.opacity(0.12), lineWidth: 1)
                                     )
                             }
 
-                            Divider().background(Color.white.opacity(0.10))
+                            Divider().background(Theme.line.opacity(0.10))
 
                             // Chess.com Elo
                             VStack(alignment: .leading, spacing: 8) {
@@ -2543,7 +2297,7 @@ struct SettingsView: View {
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                .stroke(Theme.line.opacity(0.08), lineWidth: 1)
                         )
                     }
 
@@ -2574,19 +2328,19 @@ struct SettingsView: View {
                                         .cornerRadius(6)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 6)
-                                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                                .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                                         )
                                         
                                         Text(type.displayName)
                                             .font(.roundedSystem(.caption, weight: .bold))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(Theme.textMain)
                                     }
                                     .padding(8)
                                     .background(appTheme == type.rawValue ? Theme.accentColor.opacity(0.15) : Theme.panelBackground)
                                     .cornerRadius(12)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(appTheme == type.rawValue ? Theme.accentColor : Color.white.opacity(0.08), lineWidth: appTheme == type.rawValue ? 2 : 1)
+                                            .stroke(appTheme == type.rawValue ? Theme.accentColor : Theme.line.opacity(0.08), lineWidth: appTheme == type.rawValue ? 2 : 1)
                                     )
                                 }
                                 .buttonStyle(ScaleButtonStyle())
@@ -2600,7 +2354,7 @@ struct SettingsView: View {
                             .font(.headline)
                             .foregroundColor(Theme.textMain)
                         
-                        HStack(spacing: 16) {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                             ForEach(AppLanguage.allCases) { lang in
                                 Button(action: {
                                     withAnimation {
@@ -2609,67 +2363,17 @@ struct SettingsView: View {
                                 }) {
                                     Text(lang.displayName)
                                         .font(.subheadline.bold())
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Theme.textMain)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 14)
                                         .background(appLanguage == lang.rawValue ? Theme.accentColor.opacity(0.15) : Theme.panelBackground)
                                         .cornerRadius(12)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 12)
-                                                .stroke(appLanguage == lang.rawValue ? Theme.accentColor : Color.white.opacity(0.12), lineWidth: 2)
+                                                .stroke(appLanguage == lang.rawValue ? Theme.accentColor : Theme.line.opacity(0.12), lineWidth: 2)
                                         )
-                                }
-                                .buttonStyle(ScaleButtonStyle())
-                            }
-                        }
-                    }
-                    
-                    // App Icon Selection Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(L10n.tr("app_icon_selection"))
-                            .font(.headline)
-                            .foregroundColor(Theme.textMain)
-                        
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                            ForEach([
-                                ("elysium", "standard"),
-                                ("nebula", "dark_neon"),
-                                ("eclipse", "midnight_gold"),
-                                ("sophie", "sweet_rose"),
-                                ("aquamarine", "aquamarine"),
-                                ("onyx", "onyx")
-                            ], id: \.0) { icon, labelKey in
-                                Button(action: {
-                                    withAnimation {
-                                        appIcon = icon
-                                        changeAppIcon(to: icon)
-                                    }
-                                }) {
-                                    VStack(alignment: .center, spacing: 8) {
-                                        Image(icon)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 60, height: 60)
-                                            .cornerRadius(12)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                            )
-                                            .shadow(radius: 3)
-
-                                        Text(L10n.tr(labelKey))
-                                            .font(.caption.bold())
-                                            .foregroundColor(.white)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(appIcon == icon ? Theme.accentColor.opacity(0.15) : Theme.panelBackground)
-                                    .cornerRadius(16)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(appIcon == icon ? Theme.accentColor : Color.white.opacity(0.12), lineWidth: 2)
-                                    )
                                 }
                                 .buttonStyle(ScaleButtonStyle())
                             }
@@ -2699,14 +2403,14 @@ struct SettingsView: View {
                                 
                                 TextField("Stockfish", text: $botName)
                                     .font(.roundedSystem(.body, weight: .bold))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Theme.textMain)
                                     .padding(.vertical, 8)
                                     .padding(.horizontal, 12)
                                     .background(Color.black.opacity(0.20))
                                     .cornerRadius(8)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                            .stroke(Theme.line.opacity(0.12), lineWidth: 1)
                                     )
                             }
                             .padding(.horizontal, 16)
@@ -2715,7 +2419,7 @@ struct SettingsView: View {
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.08), lineWidth: 1)
                             )
                         }
                     }
@@ -2808,20 +2512,6 @@ struct SettingsView: View {
         }
         .preferredColorScheme(.dark)
     }
-    
-    private func changeAppIcon(to iconName: String) {
-        let targetName = iconName == "elysium" ? nil : iconName
-        
-        guard UIApplication.shared.supportsAlternateIcons else {
-            return
-        }
-        
-        UIApplication.shared.setAlternateIconName(targetName) { error in
-            if let error = error {
-                print("Error changing app icon: \(error.localizedDescription)")
-            }
-        }
-    }
 }
 
 struct PlayerProfileView: View {
@@ -2844,9 +2534,7 @@ struct PlayerProfileView: View {
     var bestMoveAction: (() -> Void)? = nil
     var showBestMoveButton: Bool = false
     var showHintButton: Bool = true
-    var showAccuracy: Bool = false
-    var accuracyValue: Double? = nil
-    
+
     private func hintButtonText(for step: Int) -> String {
         switch step {
         case 1: return L10n.tr("hint_narrow")
@@ -2871,7 +2559,7 @@ struct PlayerProfileView: View {
                     
                     Image(systemName: avatarImage)
                         .font(isIPad ? .title2 : .body)
-                        .foregroundColor(.white)
+                        .foregroundColor(Theme.textMain)
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -2886,7 +2574,7 @@ struct PlayerProfileView: View {
                         if let m = mateIn {
                             Text("M\(m)")
                                 .font(isIPad ? Font.body.bold() : Font.caption.bold())
-                                .foregroundColor(.white)
+                                .foregroundColor(Theme.textMain)
                                 .padding(.horizontal, isIPad ? 8 : 6)
                                 .padding(.vertical, isIPad ? 3 : 2)
                                 .background(Color.red.opacity(0.8))
@@ -2904,140 +2592,115 @@ struct PlayerProfileView: View {
             
             Spacer()
             
-            // Buttons and Info Grid (Right)
-            let colWidth: CGFloat = isIPad ? 140 : 105
+            // Buttons and Info (Right) — laid out on a single row alongside the player card
+            let colWidth: CGFloat = isIPad ? 140 : 96
             let colHeight: CGFloat = isIPad ? 44 : 34
             
             let hasHint = !isAnalysisMode && showHintButton && hintAction != nil
             let hasBestMove = isAnalysisMode || (showBestMoveButton && bestMoveAction != nil)
             let hasClock = timeRemaining != nil
-            let hasAccuracy = showAccuracy && accuracyValue != nil
-            let showRightSide = hasHint || hasBestMove || hasClock || hasAccuracy
+            let showRightSide = hasHint || hasBestMove || hasClock
             
             if showRightSide {
-                VStack(alignment: .trailing, spacing: 6) {
-                    let drawRow1 = hasHint || hasBestMove
-                    let drawRow2 = hasClock || hasAccuracy
-                    
-                    if drawRow1 {
-                        HStack(spacing: 8) {
-                            if hasHint {
-                                Button(action: hintAction!) {
-                                    HStack(spacing: 4) {
-                                        if isAnalyzingHint {
-                                            ProgressView()
-                                                .tint(hintStep > 0 ? .black : Theme.highlightSquare)
-                                                .scaleEffect(isIPad ? 0.9 : 0.65)
-                                                .frame(width: isIPad ? 20 : 14, height: isIPad ? 20 : 14)
-                                        } else {
-                                            Image(systemName: hintStep > 0 ? "lightbulb.fill" : "lightbulb")
-                                                .font(isIPad ? Font.body : Font.caption)
-                                        }
-                                        
-                                        Text(hintButtonText(for: hintStep))
-                                            .font(isIPad ? Font.body.bold() : Font.caption.bold())
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.7)
-                                    }
-                                    .foregroundColor(hintStep > 0 ? .black : Theme.highlightSquare)
-                                    .padding(.horizontal, isIPad ? 8 : 6)
-                                    .frame(width: colWidth, height: colHeight)
-                                    .background(hintStep > 0 ? Theme.highlightSquare : Theme.panelBackground)
-                                    .cornerRadius(6)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 6)
-                                            .stroke(Theme.highlightSquare.opacity(0.3), lineWidth: 1)
-                                    )
-                                }
-                                .buttonStyle(ScaleButtonStyle())
-                                .disabled(isAnalyzingHint)
-                            } else if drawRow2 && hasClock {
-                                Color.clear.frame(width: colWidth, height: colHeight)
-                            }
-                            
-                            if hasBestMove {
-                                if isAnalysisMode {
-                                    Button(action: {
-                                        bestMoveAction?()
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            if isCalculatingBestMove {
-                                                ProgressView()
-                                                    .tint(isBestMoveActive ? .black : Theme.highlightSquare)
-                                                    .scaleEffect(isIPad ? 0.9 : 0.65)
-                                                    .frame(width: isIPad ? 20 : 14, height: isIPad ? 20 : 14)
-                                            } else {
-                                                Image(systemName: "arrow.up.right")
-                                                    .font(isIPad ? Font.body : Font.caption)
-                                            }
-                                            
-                                            Text(L10n.tr("best_move"))
-                                                .font(isIPad ? Font.body.bold() : Font.caption.bold())
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.7)
-                                        }
-                                        .foregroundColor(isBestMoveActive ? .black : (isBestMoveDisabled ? Color.gray : Theme.highlightSquare))
-                                        .padding(.horizontal, isIPad ? 8 : 6)
-                                        .frame(width: colWidth, height: colHeight)
-                                        .background(isBestMoveActive ? Theme.highlightSquare : (isBestMoveDisabled ? Theme.panelBackground.opacity(0.5) : Theme.panelBackground))
-                                        .cornerRadius(6)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 6)
-                                                .stroke(isBestMoveActive ? Color.clear : (isBestMoveDisabled ? Color.clear : Theme.highlightSquare.opacity(0.3)), lineWidth: 1)
-                                        )
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
-                                    .disabled(isBestMoveDisabled || isCalculatingBestMove)
+                HStack(spacing: 8) {
+                    if hasHint {
+                        Button(action: hintAction!) {
+                            HStack(spacing: 4) {
+                                if isAnalyzingHint {
+                                    ProgressView()
+                                        .tint(hintStep > 0 ? .black : Theme.highlightSquare)
+                                        .scaleEffect(isIPad ? 0.9 : 0.65)
+                                        .frame(width: isIPad ? 20 : 14, height: isIPad ? 20 : 14)
                                 } else {
-                                    Button(action: bestMoveAction!) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "arrow.up.right")
-                                                .font(isIPad ? Font.body : Font.caption)
-                                            Text(L10n.tr("best_move"))
-                                                .font(isIPad ? Font.body.bold() : Font.caption.bold())
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.7)
-                                        }
-                                        .foregroundColor(isBestMoveDisabled ? Color.gray : .white)
-                                        .padding(.horizontal, isIPad ? 8 : 6)
-                                        .frame(width: colWidth, height: colHeight)
-                                        .background(isBestMoveDisabled ? Theme.panelBackground.opacity(0.5) : Theme.highlightSquare.opacity(0.85))
-                                        .cornerRadius(6)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 6)
-                                                .stroke(isBestMoveDisabled ? Color.clear : Theme.highlightSquare.opacity(0.3), lineWidth: 1)
-                                        )
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
-                                    .disabled(isBestMoveDisabled)
-                                    .opacity(isBestMoveDisabled ? 0.4 : 1.0)
+                                    Image(systemName: hintStep > 0 ? "lightbulb.fill" : "lightbulb")
+                                        .font(isIPad ? Font.body : Font.caption)
                                 }
-                            } else if drawRow2 && hasAccuracy {
-                                Color.clear.frame(width: colWidth, height: colHeight)
+
+                                Text(hintButtonText(for: hintStep))
+                                    .font(isIPad ? Font.body.bold() : Font.caption.bold())
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
                             }
+                            .foregroundColor(hintStep > 0 ? .black : Theme.highlightSquare)
+                            .padding(.horizontal, isIPad ? 8 : 6)
+                            .frame(width: colWidth, height: colHeight)
+                            .background(hintStep > 0 ? Theme.highlightSquare : Theme.panelBackground)
+                            .cornerRadius(6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Theme.highlightSquare.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .disabled(isAnalyzingHint)
+                    }
+
+                    if hasBestMove {
+                        if isAnalysisMode {
+                            Button(action: {
+                                bestMoveAction?()
+                            }) {
+                                HStack(spacing: 4) {
+                                    if isCalculatingBestMove {
+                                        ProgressView()
+                                            .tint(isBestMoveActive ? .black : Theme.highlightSquare)
+                                            .scaleEffect(isIPad ? 0.9 : 0.65)
+                                            .frame(width: isIPad ? 20 : 14, height: isIPad ? 20 : 14)
+                                    } else {
+                                        Image(systemName: "arrow.up.right")
+                                            .font(isIPad ? Font.body : Font.caption)
+                                    }
+
+                                    Text(L10n.tr("best_move"))
+                                        .font(isIPad ? Font.body.bold() : Font.caption.bold())
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                }
+                                .foregroundColor(isBestMoveActive ? .black : (isBestMoveDisabled ? Color.gray : Theme.highlightSquare))
+                                .padding(.horizontal, isIPad ? 8 : 6)
+                                .frame(width: colWidth, height: colHeight)
+                                .background(isBestMoveActive ? Theme.highlightSquare : (isBestMoveDisabled ? Theme.panelBackground.opacity(0.5) : Theme.panelBackground))
+                                .cornerRadius(6)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(isBestMoveActive ? Color.clear : (isBestMoveDisabled ? Color.clear : Theme.highlightSquare.opacity(0.3)), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                            .disabled(isBestMoveDisabled || isCalculatingBestMove)
+                        } else {
+                            Button(action: bestMoveAction!) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.up.right")
+                                        .font(isIPad ? Font.body : Font.caption)
+                                    Text(L10n.tr("best_move"))
+                                        .font(isIPad ? Font.body.bold() : Font.caption.bold())
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                }
+                                .foregroundColor(isBestMoveDisabled ? Color.gray : .white)
+                                .padding(.horizontal, isIPad ? 8 : 6)
+                                .frame(width: colWidth, height: colHeight)
+                                .background(isBestMoveDisabled ? Theme.panelBackground.opacity(0.5) : Theme.highlightSquare.opacity(0.85))
+                                .cornerRadius(6)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(isBestMoveDisabled ? Color.clear : Theme.highlightSquare.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                            .disabled(isBestMoveDisabled)
+                            .opacity(isBestMoveDisabled ? 0.4 : 1.0)
                         }
                     }
-                    
-                    if drawRow2 {
-                        HStack(spacing: 8) {
-                            if hasClock, let time = timeRemaining {
-                                Text(time)
-                                    .font(.system(size: isIPad ? 22 : 16, weight: .bold, design: .monospaced))
-                                    .foregroundColor(isActive ? .white : .gray)
-                                    .frame(width: colWidth, height: colHeight)
-                                    .background(isActive ? Theme.highlightSquare.opacity(0.3) : Color.black.opacity(0.2))
-                                    .cornerRadius(isIPad ? 8 : 6)
-                            } else if drawRow1 && hasHint {
-                                Color.clear.frame(width: colWidth, height: colHeight)
-                            }
-                            
-                            if hasAccuracy, let accuracy = accuracyValue {
-                                AccuracyCounterView(accuracy: accuracy)
-                                    .frame(width: colWidth, height: colHeight)
-                            } else if drawRow1 && hasBestMove {
-                                Color.clear.frame(width: colWidth, height: colHeight)
-                            }
-                        }
+
+                    if hasClock, let time = timeRemaining {
+                        Text(time)
+                            .font(.system(size: isIPad ? 22 : 16, weight: .bold, design: .monospaced))
+                            .foregroundColor(isActive ? .white : .gray)
+                            .frame(width: colWidth, height: colHeight)
+                            .background(isActive ? Theme.highlightSquare.opacity(0.3) : Color.black.opacity(0.2))
+                            .cornerRadius(isIPad ? 8 : 6)
                     }
                 }
             }
@@ -3159,7 +2822,7 @@ struct FlipDigitView: View {
         let isIPad = UIDevice.current.userInterfaceIdiom == .pad
         Text("\(value)")
             .font(.system(size: isIPad ? 28 : 20, weight: .bold, design: .monospaced))
-            .foregroundColor(.white)
+            .foregroundColor(.white) // Always white: the digit box is black in every theme
             .frame(width: isIPad ? 22 : 16, height: isIPad ? 38 : 28)
             .background(Color.black)
             .cornerRadius(isIPad ? 6 : 4)
@@ -3195,7 +2858,7 @@ struct AccuracyCounterView: View {
             
             Text("%")
                 .font(.system(size: isIPad ? 28 : 20, weight: .bold, design: .monospaced))
-                .foregroundColor(.white)
+                .foregroundColor(.white) // Match the digits (black box in every theme)
                 .padding(.horizontal, isIPad ? 6 : 4)
         }
         .padding(.horizontal, isIPad ? 6 : 4)

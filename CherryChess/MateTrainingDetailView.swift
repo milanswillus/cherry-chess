@@ -77,7 +77,7 @@ struct MateTrainingDetailView: View {
                             .cornerRadius(isIPad ? 12 : 8)
                             .overlay(
                                 RoundedRectangle(cornerRadius: isIPad ? 12 : 8)
-                                    .stroke(hintBestMoveArrow != nil ? Theme.accentColor : Color.white.opacity(0.06), lineWidth: hintBestMoveArrow != nil ? 2 : 1)
+                                    .stroke(hintBestMoveArrow != nil ? Theme.accentColor : Theme.line.opacity(0.06), lineWidth: hintBestMoveArrow != nil ? 2 : 1)
                             )
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -93,7 +93,7 @@ struct MateTrainingDetailView: View {
                                 .cornerRadius(isIPad ? 12 : 8)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: isIPad ? 12 : 8)
-                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                        .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                                 )
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -122,7 +122,7 @@ struct MateTrainingDetailView: View {
                             .fill(Theme.panelBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                     )
                     Spacer()
@@ -150,7 +150,7 @@ struct MateTrainingDetailView: View {
                 .cornerRadius(16)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(hasWastedMoves ? Color.orange.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 1)
+                        .stroke(hasWastedMoves ? Color.orange.opacity(0.25) : Theme.line.opacity(0.06), lineWidth: 1)
                 )
                 .padding(.bottom, 8)
                 
@@ -158,7 +158,7 @@ struct MateTrainingDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(appLanguage == "de" ? "Regeln:" : "Rules:")
                         .font(.system(.headline, design: .rounded).bold())
-                        .foregroundColor(.white)
+                        .foregroundColor(Theme.textMain)
                     Text(appLanguage == "de" ? 
                          "• Setze den Bot in dieser Stellung matt.\n• Der Bot spielt mit maximaler Stärke.\n• Jeder Fehler, der zu einem Remis führt, bricht das Spiel sofort ab." : 
                          "• Checkmate the bot from this position.\n• The bot plays at maximum strength.\n• Any mistake leading to a draw immediately terminates the game.")
@@ -171,7 +171,7 @@ struct MateTrainingDetailView: View {
                 .cornerRadius(16)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                        .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                 )
                 .padding()
                 
@@ -180,63 +180,8 @@ struct MateTrainingDetailView: View {
             
             // Promotion Picker Overlay (Clean, premium custom modal)
             if viewModel.showPromotionPicker {
-                ZStack {
-                    Color.black.opacity(0.4)
-                        .ignoresSafeArea()
-                    
-                    VStack(spacing: 20) {
-                        Text(appLanguage == "de" ? "Bauernumwandlung" : "Pawn Promotion")
-                            .font(.system(.headline, design: .rounded).bold())
-                            .foregroundColor(.white)
-                            .tracking(1.0)
-                        
-                        HStack(spacing: 16) {
-                            let colorPrefix = viewModel.playerColor == .white ? "w" : "b"
-                            let options: [(Piece.Kind, String)] = [
-                                (.queen, "q"),
-                                (.rook, "r"),
-                                (.bishop, "b"),
-                                (.knight, "n")
-                            ]
-                            
-                            ForEach(options, id: \.0) { kind, suffix in
-                                Button(action: {
-                                    withAnimation {
-                                        viewModel.completePromotion(to: kind)
-                                    }
-                                }) {
-                                    VStack(spacing: 8) {
-                                        Image(colorPrefix + suffix)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 44, height: 44)
-                                            .padding(10)
-                                            .background(Theme.panelBackground)
-                                            .cornerRadius(12)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                            )
-                                        
-                                        Text(pieceKindName(kind))
-                                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                                            .foregroundColor(Theme.textSecondary)
-                                    }
-                                }
-                                .buttonStyle(ScaleButtonStyle())
-                            }
-                        }
-                    }
-                    .padding(.vertical, 24)
-                    .padding(.horizontal, 28)
-                    .background(Theme.panelBackground)
-                    .cornerRadius(24)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1.5)
-                    )
-                    .shadow(color: Color.black.opacity(0.3), radius: 12, x: 0, y: 6)
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                PromotionPickerView(promotingColor: viewModel.playerColor) { kind in
+                    viewModel.completePromotion(to: kind)
                 }
                 .zIndex(200)
             }
@@ -475,21 +420,6 @@ struct MateTrainingDetailView: View {
         if let (start, end) = allMoves.randomElement() {
             viewModel.lastPlayerMoveFenBefore = viewModel.board.position.fen
             viewModel.makeEngineMove(start: start, end: end)
-        }
-    }
-    
-    private func pieceKindName(_ kind: Piece.Kind) -> String {
-        switch kind {
-        case .queen:
-            return appLanguage == "de" ? "Dame" : "Queen"
-        case .rook:
-            return appLanguage == "de" ? "Turm" : "Rook"
-        case .bishop:
-            return appLanguage == "de" ? "Läufer" : "Bishop"
-        case .knight:
-            return appLanguage == "de" ? "Springer" : "Knight"
-        default:
-            return ""
         }
     }
     

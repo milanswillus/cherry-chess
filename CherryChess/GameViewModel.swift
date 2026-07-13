@@ -83,7 +83,6 @@ class GameViewModel: ObservableObject {
     
     private var timer: Timer?
     
-    @Published var showTimeExpiredAlert: Bool = false
     @Published var expiredPlayerColor: Piece.Color? = nil
     
     var isPlayerTurn: Bool {
@@ -354,7 +353,6 @@ class GameViewModel: ObservableObject {
         self.pendingPromotionMove = nil
         self.lastPlayerMoveFenBefore = nil
         self.premoves.removeAll()
-        self.showTimeExpiredAlert = false
         self.expiredPlayerColor = nil
         self.lastBestMoveStr = nil
         self.history.removeAll()
@@ -396,7 +394,6 @@ class GameViewModel: ObservableObject {
         self.pendingPromotionMove = nil
         self.lastPlayerMoveFenBefore = nil
         self.premoves.removeAll()
-        self.showTimeExpiredAlert = false
         self.expiredPlayerColor = nil
         self.lastBestMoveStr = nil
         self.history.removeAll()
@@ -463,6 +460,15 @@ class GameViewModel: ObservableObject {
         }
     }
     
+    deinit {
+        timer?.invalidate()
+    }
+
+    /// Stops the game clock, e.g. when the user leaves an active game via Back.
+    func stopClock() {
+        timer?.invalidate()
+    }
+
     private func startTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -504,19 +510,8 @@ class GameViewModel: ObservableObject {
         }
     }
     
-    func claimTimeLoss() {
-        self.gameOver = true
-        let loser = expiredPlayerColor == .white ? "Weiß" : "Schwarz"
-        self.gameResult = "\(loser) verliert durch Zeitüberschreitung"
-        self.showTimeExpiredAlert = false
-        
-        let won = (expiredPlayerColor != playerColor)
-        HapticManager.shared.playNotification(won ? .success : .error)
-    }
-    
     func continueWithoutTime() {
         self.isTimed = false
-        self.showTimeExpiredAlert = false
         self.gameOver = false
         self.expiredPlayerColor = nil
         self.gameResult = ""
