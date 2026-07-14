@@ -47,7 +47,7 @@ struct ContentView: View {
     // Game Mode Selection and Setup
     @State private var selectedGameMode: PlayGameMode = .none
     @State private var allowHints = true
-    @State private var showBestMovesRetrospectively = false
+    @State private var showBestMovesRetrospectively = true
     @State private var flipBoardAfterMoves = true
     @State private var challengeMode = false
     
@@ -140,24 +140,8 @@ struct ContentView: View {
         }
     }
 
-    private func shouldShowGameBestMoveButton(for color: Piece.Color) -> Bool {
-        if viewModel.isChallengeMode {
-            return false
-        }
-        if viewModel.isFriendMode {
-            return viewModel.showBestMovesRetrospectively
-        }
-        if viewModel.showBestMovesRetrospectively {
-            return true
-        }
-        if showAnalysis,
-           let node = lastHistoryNode(for: color),
-           let classification = node.classification,
-           let bestMoveStr = node.bestMoveStr, !bestMoveStr.isEmpty,
-           (classification == .blunder || classification == .mistake || classification == .inaccuracy) {
-            return true
-        }
-        return false
+    private var shouldShowGameBestMoveButton: Bool {
+        !viewModel.isChallengeMode && viewModel.showBestMovesRetrospectively
     }
 
     /// Accuracy counter (fixed) with the captured pieces + move classifications
@@ -558,7 +542,7 @@ struct ContentView: View {
                             bestMoveAction: {
                                 showGameBestMoveArrow(for: topColor)
                             },
-                            showBestMoveButton: shouldShowGameBestMoveButton(for: topColor),
+                            showBestMoveButton: shouldShowGameBestMoveButton,
                             showHintButton: viewModel.isFriendMode ? (viewModel.allowHints && viewModel.board.position.sideToMove == topColor) : false
                         )
 
@@ -613,7 +597,7 @@ struct ContentView: View {
                             bestMoveAction: {
                                 showGameBestMoveArrow(for: bottomColor)
                             },
-                            showBestMoveButton: shouldShowGameBestMoveButton(for: bottomColor),
+                            showBestMoveButton: shouldShowGameBestMoveButton,
                             showHintButton: viewModel.isChallengeMode ? false : (viewModel.isFriendMode ? (viewModel.allowHints && viewModel.board.position.sideToMove == bottomColor) : viewModel.allowHints)
                         )
 

@@ -50,7 +50,7 @@ class GameViewModel: ObservableObject {
     @Published var isFriendMode: Bool = false
     @Published var flipBoardAfterMoves: Bool = true
     @Published var allowHints: Bool = true
-    @Published var showBestMovesRetrospectively: Bool = false
+    @Published var showBestMovesRetrospectively: Bool = true
 
     /// Challenge / "unsupported" mode: play against the bot with no on-screen
     /// assistance (no eval bar, no live Elo, no move classifications, no hints).
