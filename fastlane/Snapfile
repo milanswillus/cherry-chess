@@ -1,0 +1,28 @@
+# Devices: 6.9" iPhone and 13" iPad (both on the iOS 26 runtime the app targets).
+devices([
+  "iPhone 17 Pro Max",
+  "iPad Pro 13-inch (M5)"
+])
+
+# App Store localizations to capture.
+languages([
+  "en-US",
+  "de-DE"
+])
+
+# The shared scheme whose Test action runs CherryChessUITests.
+scheme("CherryChess")
+
+# Only run the screenshot test (not any other tests that may be added later).
+only_testing(["CherryChessUITests/CherryChessUITests/testCaptureScreenshots"])
+
+output_directory("./fastlane/screenshots")
+clear_previous_screenshots(true)
+
+# Run simulators one at a time for stable, reproducible output.
+concurrent_simulators(false)
+stop_after_first_error(true)
+
+# Freshly-booted simulators often reject the first launch ("Busy / failed
+# preflight checks"); retry enough times to ride out that boot race.
+number_of_retries(4)

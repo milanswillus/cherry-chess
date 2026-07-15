@@ -7,17 +7,36 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		273F3F4D18A079A6E92BC549 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A6D2192280874B5FDDED1E84 /* Foundation.framework */; };
+		3BC837127DF3344D4477FDFD /* SnapshotHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7DB702591396E52B89857B /* SnapshotHelper.swift */; };
+		51D583632A2EC968F50E07CB /* CherryChessUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6463776D593FEED50578A7BD /* CherryChessUITests.swift */; };
 		6114A95249F94669F3B5DFB2 /* ChessKitEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 195586294A8A3789E35B952D /* ChessKitEngine */; };
 		91AEE318C48B09D6876A15E3 /* ChessKit in Frameworks */ = {isa = PBXBuildFile; productRef = E35558E8C74659FB7D1F755C /* ChessKit */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		E858CBE6479E8999E4D39505 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2313E9C52FB3B4DF00B51DF1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2313E9CC2FB3B4DF00B51DF1;
+			remoteInfo = CherryChess;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		2313E9CD2FB3B4DF00B51DF1 /* CherryChess.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CherryChess.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6463776D593FEED50578A7BD /* CherryChessUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CherryChessUITests.swift; sourceTree = "<group>"; };
+		7B7DB702591396E52B89857B /* SnapshotHelper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
+		A2C7303A2E3506195B41F236 /* CherryChessUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CherryChessUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A6D2192280874B5FDDED1E84 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		2313E9CF2FB3B4DF00B51DF1 /* CherryChess */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = CherryChess;
 			sourceTree = "<group>";
 		};
@@ -33,14 +52,32 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4EAA95EEFB402E8E510AD60A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				273F3F4D18A079A6E92BC549 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1EA45C74A19D940D6980FD53 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				A6D2192280874B5FDDED1E84 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		2313E9C42FB3B4DF00B51DF1 = {
 			isa = PBXGroup;
 			children = (
 				2313E9CF2FB3B4DF00B51DF1 /* CherryChess */,
 				2313E9CE2FB3B4DF00B51DF1 /* Products */,
+				5343349837675E34CBCA3183 /* Frameworks */,
+				322CA4167401E265AA416C83 /* CherryChessUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -48,13 +85,50 @@
 			isa = PBXGroup;
 			children = (
 				2313E9CD2FB3B4DF00B51DF1 /* CherryChess.app */,
+				A2C7303A2E3506195B41F236 /* CherryChessUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		322CA4167401E265AA416C83 /* CherryChessUITests */ = {
+			isa = PBXGroup;
+			children = (
+				6463776D593FEED50578A7BD /* CherryChessUITests.swift */,
+				7B7DB702591396E52B89857B /* SnapshotHelper.swift */,
+			);
+			name = CherryChessUITests;
+			path = CherryChessUITests;
+			sourceTree = "<group>";
+		};
+		5343349837675E34CBCA3183 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1EA45C74A19D940D6980FD53 /* iOS */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1A05DEC052608DAE1972FAC7 /* CherryChessUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 843588F21469E6E383B9054E /* Build configuration list for PBXNativeTarget "CherryChessUITests" */;
+			buildPhases = (
+				4AA8658CCB7A6C172B5096ED /* Sources */,
+				4EAA95EEFB402E8E510AD60A /* Frameworks */,
+				C25CB4687A820F8B7169BA46 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B5C07D205B15117A62EFE2BE /* PBXTargetDependency */,
+			);
+			name = CherryChessUITests;
+			productName = CherryChessUITests;
+			productReference = A2C7303A2E3506195B41F236 /* CherryChessUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		2313E9CC2FB3B4DF00B51DF1 /* CherryChess */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2313E9D82FB3B4E000B51DF1 /* Build configuration list for PBXNativeTarget "CherryChess" */;
@@ -113,12 +187,20 @@
 			projectRoot = "";
 			targets = (
 				2313E9CC2FB3B4DF00B51DF1 /* CherryChess */,
+				1A05DEC052608DAE1972FAC7 /* CherryChessUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		2313E9CB2FB3B4DF00B51DF1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C25CB4687A820F8B7169BA46 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -135,7 +217,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4AA8658CCB7A6C172B5096ED /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				51D583632A2EC968F50E07CB /* CherryChessUITests.swift in Sources */,
+				3BC837127DF3344D4477FDFD /* SnapshotHelper.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B5C07D205B15117A62EFE2BE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CherryChess;
+			target = 2313E9CC2FB3B4DF00B51DF1 /* CherryChess */;
+			targetProxy = E858CBE6479E8999E4D39505 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		2313E9D62FB3B4E000B51DF1 /* Debug */ = {
@@ -264,18 +364,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8JQYJF5Y8L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Cherry Chess";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -298,18 +399,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8JQYJF5Y8L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Cherry Chess";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -324,6 +426,45 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		44B22E06682E4B0F3C21CF70 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8JQYJF5Y8L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.CherryChess.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CherryChess;
+			};
+			name = Debug;
+		};
+		806E02DF255526DDC9639A09 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8JQYJF5Y8L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.CherryChess.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CherryChess;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -344,6 +485,15 @@
 			buildConfigurations = (
 				2313E9D92FB3B4E000B51DF1 /* Debug */,
 				2313E9DA2FB3B4E000B51DF1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		843588F21469E6E383B9054E /* Build configuration list for PBXNativeTarget "CherryChessUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				806E02DF255526DDC9639A09 /* Release */,
+				44B22E06682E4B0F3C21CF70 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

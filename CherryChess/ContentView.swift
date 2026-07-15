@@ -1211,9 +1211,10 @@ struct ContentView: View {
                             .themedCardShadow()
                     }
                     .buttonStyle(ScaleButtonStyle())
+                    .accessibilityIdentifier("startAnalysis")
                     .padding(.horizontal)
                     .padding(.top, 4)
-                    
+
                     // Play analysis checkbox
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle(L10n.tr("show_analysis_toggle"), isOn: $showAnalysisTabAnalysis)
@@ -2188,6 +2189,7 @@ struct ContentView: View {
             )
         }
         .buttonStyle(ScaleButtonStyle())
+        .accessibilityIdentifier("tab_\(index)")
     }
 }
 
