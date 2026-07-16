@@ -970,8 +970,7 @@ struct OpeningChessBoardView: View {
     @AppStorage("appTheme") private var appTheme = "cherry"
     @AppStorage("appLanguage") private var appLanguage = "de"
     @AppStorage("screenShakeEnabled") private var screenShakeEnabled = false
-    @State private var shakeOffsetX: CGFloat = 0
-    @State private var shakeOffsetY: CGFloat = 0
+    @State private var shakeTrigger: CGFloat = 0
     @ObservedObject var viewModel: OpeningTrainerViewModel
     
     var body: some View {
@@ -1058,7 +1057,7 @@ struct OpeningChessBoardView: View {
             }
             .border(Color.black, width: 2)
             .frame(width: boardSize, height: boardSize)
-            .offset(x: shakeOffsetX, y: shakeOffsetY)
+            .modifier(BoardShakeEffect(animatableData: shakeTrigger))
         }
         .aspectRatio(1, contentMode: .fit)
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("didMakeMove"))) { notification in
@@ -1066,14 +1065,11 @@ struct OpeningChessBoardView: View {
             triggerShake()
         }
     }
-    
+
     private func triggerShake() {
         guard screenShakeEnabled else { return }
-        shakeOffsetX = -6
-        shakeOffsetY = 4
-        withAnimation(.spring(response: 0.22, dampingFraction: 0.25, blendDuration: 0)) {
-            shakeOffsetX = 0
-            shakeOffsetY = 0
+        withAnimation(.linear(duration: 0.3)) {
+            shakeTrigger += 1
         }
     }
 }

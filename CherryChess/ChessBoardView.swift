@@ -1,12 +1,26 @@
 import SwiftUI
 import ChessKit
 
+/// Damped board wobble; each +1 step of `animatableData` plays one full shake.
+/// A GeometryEffect is required here: animating an offset back and forth via
+/// @State collapses into a single render pass and never displaces the view.
+struct BoardShakeEffect: GeometryEffect {
+    var animatableData: CGFloat
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let progress = animatableData - animatableData.rounded(.down)
+        let decay = 1 - progress
+        let x = -6 * sin(progress * .pi * 4) * decay
+        let y = 4 * sin(progress * .pi * 2) * decay
+        return ProjectionTransform(CGAffineTransform(translationX: x, y: y))
+    }
+}
+
 struct ChessBoardView: View {
     @AppStorage("appTheme") private var appTheme = "cherry"
     @AppStorage("appLanguage") private var appLanguage = "de"
     @AppStorage("screenShakeEnabled") private var screenShakeEnabled = false
-    @State private var shakeOffsetX: CGFloat = 0
-    @State private var shakeOffsetY: CGFloat = 0
+    @State private var shakeTrigger: CGFloat = 0
     @ObservedObject var viewModel: GameViewModel
     var bestMoveArrow: (start: Square, end: Square)? = nil
     var showAnalysis: Bool = false
@@ -150,7 +164,7 @@ struct ChessBoardView: View {
         .frame(width: boardSize, height: boardSize)
         .padding(2)
         .background(Color.black)
-        .offset(x: shakeOffsetX, y: shakeOffsetY)
+        .modifier(BoardShakeEffect(animatableData: shakeTrigger))
     }
     .aspectRatio(1, contentMode: .fit)
     .onReceive(NotificationCenter.default.publisher(for: Notification.Name("didMakeMove"))) { notification in
@@ -161,11 +175,8 @@ struct ChessBoardView: View {
 
 private func triggerShake() {
     guard screenShakeEnabled else { return }
-    shakeOffsetX = -6
-    shakeOffsetY = 4
-    withAnimation(.spring(response: 0.22, dampingFraction: 0.25, blendDuration: 0)) {
-        shakeOffsetX = 0
-        shakeOffsetY = 0
+    withAnimation(.linear(duration: 0.3)) {
+        shakeTrigger += 1
     }
 }
 }
